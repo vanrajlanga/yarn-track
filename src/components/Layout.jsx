@@ -1,14 +1,11 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { LogOut, Package, User, Home } from "lucide-react";
 import { Button } from "./ui/Button";
 
-interface LayoutProps {
-	children: React.ReactNode;
-}
-
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout = ({ children }) => {
 	const { currentUser, logout } = useAuth();
 	const location = useLocation();
 
@@ -16,7 +13,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 		return <>{children}</>;
 	}
 
-	const isActive = (path: string) => location.pathname.startsWith(path);
+	const isActive = (path) => location.pathname.startsWith(path);
 
 	return (
 		<div className="min-h-screen bg-gray-50 flex">
@@ -99,4 +96,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 			</div>
 		</div>
 	);
+};
+
+Layout.propTypes = {
+	children: PropTypes.node.isRequired,
 };

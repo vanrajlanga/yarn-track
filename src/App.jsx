@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import {
 	BrowserRouter as Router,
 	Routes,
@@ -13,9 +14,7 @@ import { Layout } from "./components/Layout";
 import { OrderDashboard } from "./components/OrderDashboard";
 
 // Protected Route component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
-	children,
-}) => {
+const ProtectedRoute = ({ children }) => {
 	const { currentUser, isLoading } = useAuth();
 
 	// Don't redirect while still checking authentication
@@ -30,7 +29,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 	return <>{children}</>;
 };
 
-const App: React.FC = () => {
+ProtectedRoute.propTypes = {
+	children: PropTypes.node.isRequired,
+};
+
+const App = () => {
 	return (
 		<AuthProvider>
 			<OrderProvider>

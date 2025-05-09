@@ -1,54 +1,50 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { Order, OrderStatus } from "../types";
+import React, {
+	createContext,
+	useContext,
+	useState,
+	useEffect,
+	useMemo,
+} from "react";
+import PropTypes from "prop-types";
 import { useAuth } from "./AuthContext";
+import { API_URL } from "../config";
 
-interface OrderContextType {
-	orders: Order[];
-	loading: boolean;
-	error: string | null;
-	filters: OrderFilters;
-	setFilters: (filters: OrderFilters) => void;
-	createOrder: (orderData: OrderCreateData) => Promise<Order | null>;
-	updateOrderStatus: (
-		orderId: string,
-		status: OrderStatus
-	) => Promise<Order | null>;
-	refreshOrders: () => Promise<void>;
-}
+/**
+ * @typedef {import('../types').Order} Order
+ * @typedef {import('../types').OrderStatus} OrderStatus
+ */
 
-interface OrderFilters {
-	status: string;
-	searchTerm: string;
-	salespersonId: string;
-	startDate: string;
-	endDate: string;
-}
+/**
+ * @typedef {Object} OrderFilters
+ * @property {string} status
+ * @property {string} searchTerm
+ * @property {string} salespersonId
+ * @property {string} startDate
+ * @property {string} endDate
+ */
 
-interface OrderCreateData {
-	sdyNumber: string;
-	date: string;
-	partyName: string;
-	deliveryParty: string;
-	salespersonId: string | number;
-	denier: string;
-	slNumber: string;
-	salesperson: {
-		id: string | number;
-		username: string;
-	};
-}
+/**
+ * @typedef {Object} OrderCreateData
+ * @property {string} sdyNumber
+ * @property {string} date
+ * @property {string} partyName
+ * @property {string} deliveryParty
+ * @property {string|number} salespersonId
+ * @property {string} denier
+ * @property {string} slNumber
+ * @property {Object} salesperson
+ * @property {string|number} salesperson.id
+ * @property {string} salesperson.username
+ */
 
-const API_URL = "http://localhost:5000/api";
+const OrderContext = createContext(undefined);
 
-const OrderContext = createContext<OrderContextType | undefined>(undefined);
-
-export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
-	children,
-}) => {
-	const [orders, setOrders] = useState<Order[]>([]);
+export const OrderProvider = ({ children }) => {
+	const [orders, setOrders] = useState([]);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [filters, setFilters] = useState<OrderFilters>({
+	const [error, setError] = useState(null);
+	const [salesUsers, setSalesUsers] = useState([]);
+	const [filters, setFilters] = useState({
 		status: "all",
 		searchTerm: "",
 		salespersonId: "all",
@@ -57,6 +53,27 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
 	});
 
 	const { currentUser } = useAuth();
+
+	// Define permissions based on user role
+	const canEditOrders = useMemo(() => {
+		if (!currentUser) return false;
+		// Admin users can only view orders, not edit them
+		if (currentUser.role === "admin") return false;
+		// Operators can add orders but not edit them
+		if (currentUser.role === "operator") return false;
+		// Only factory role can edit orders now
+		return ["factory"].includes(currentUser.role);
+	}, [currentUser]);
+
+	const canAddOrders = useMemo(() => {
+		if (!currentUser) return false;
+		// Admin users can only view orders, not add them
+		if (currentUser.role === "admin") return false;
+		// Factory users can edit orders but not add them
+		if (currentUser.role === "factory") return false;
+		// Only operators can add orders
+		return ["operator"].includes(currentUser.role);
+	}, [currentUser]);
 
 	const constructQueryParams = () => {
 		const params = new URLSearchParams();
@@ -67,6 +84,41 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
 		if (filters.startDate) params.append("startDate", filters.startDate);
 		if (filters.endDate) params.append("endDate", filters.endDate);
 		return params.toString();
+	};
+
+	const fetchSalesUsers = async () => {
+		try {
+			const token = localStorage.getItem("token");
+			if (!token) {
+				return;
+			}
+
+			// Only admin and operator need to fetch sales users
+			if (
+				!currentUser ||
+				!["admin", "operator"].includes(currentUser.role)
+			) {
+				return;
+			}
+
+			const response = await fetch(`${API_URL}/auth/sales-users`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to fetch sales users: ${response.status} ${response.statusText}`
+				);
+			}
+
+			const data = await response.json();
+			console.log("Sales users fetched:", data); // Debug log
+			setSalesUsers(data);
+		} catch (err) {
+			console.error("Error fetching sales users:", err);
+		}
 	};
 
 	const fetchOrders = async () => {
@@ -116,7 +168,24 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	}, [currentUser, filters]);
 
-	const createOrder = async (orderData: OrderCreateData) => {
+	// Fetch sales users when currentUser changes
+	useEffect(() => {
+		if (currentUser) {
+			fetchSalesUsers();
+		}
+	}, [currentUser]);
+
+	/**
+	 * @param {OrderCreateData} orderData
+	 * @returns {Promise<Order|null>}
+	 */
+	const createOrder = async (orderData) => {
+		// Add permission check
+		if (!canAddOrders) {
+			setError("Not authorized to add orders");
+			return null;
+		}
+
 		try {
 			const token = localStorage.getItem("token");
 			if (!token) {
@@ -151,7 +220,18 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 	};
 
-	const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+	/**
+	 * @param {string} orderId
+	 * @param {OrderStatus} status
+	 * @returns {Promise<Order|null>}
+	 */
+	const updateOrderStatus = async (orderId, status) => {
+		// Add permission check
+		if (!canEditOrders) {
+			setError("Not authorized to update order status");
+			return null;
+		}
+
 		try {
 			const token = localStorage.getItem("token");
 			if (!token) {
@@ -206,11 +286,18 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
 				createOrder,
 				updateOrderStatus,
 				refreshOrders: fetchOrders,
+				canEditOrders,
+				canAddOrders,
+				salesUsers,
 			}}
 		>
 			{children}
 		</OrderContext.Provider>
 	);
+};
+
+OrderProvider.propTypes = {
+	children: PropTypes.node.isRequired,
 };
 
 export const useOrders = () => {

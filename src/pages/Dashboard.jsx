@@ -3,7 +3,7 @@ import { Layout } from "../components/Layout";
 import { AnalyticsDashboard } from "../components/AnalyticsDashboard";
 import { useAuth } from "../context/AuthContext";
 
-export const Dashboard: React.FC = () => {
+export const Dashboard = () => {
 	const { currentUser } = useAuth();
 
 	return (
