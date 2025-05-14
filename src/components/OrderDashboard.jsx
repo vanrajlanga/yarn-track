@@ -119,7 +119,7 @@ export const OrderDashboard = () => {
 			)
 			.map((item) => ({
 				...item,
-				quantity: item.quantity || 1,
+				quantity: item.quantity ? Number(item.quantity) : 1,
 			}));
 
 		try {
