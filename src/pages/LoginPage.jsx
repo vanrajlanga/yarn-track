@@ -15,7 +15,10 @@ export const LoginPage = () => {
 	useEffect(() => {
 		// Only redirect if we're on the login page and user is logged in
 		if (currentUser && location.pathname === "/login") {
-			navigate("/dashboard", { replace: true });
+			// Redirect admin to dashboard, others to orders
+			const redirectPath =
+				currentUser.role === "admin" ? "/dashboard" : "/orders";
+			navigate(redirectPath, { replace: true });
 		}
 	}, [currentUser, navigate, location.pathname]);
 
@@ -31,7 +34,12 @@ export const LoginPage = () => {
 		const success = await login(username, password);
 
 		if (success) {
-			navigate("/dashboard", { replace: true });
+			// Get user from local storage since currentUser might not be updated yet
+			const userData = JSON.parse(localStorage.getItem("user"));
+			// Redirect admin to dashboard, others to orders
+			const redirectPath =
+				userData?.role === "admin" ? "/dashboard" : "/orders";
+			navigate(redirectPath, { replace: true });
 		} else {
 			setError("Invalid username or password");
 		}

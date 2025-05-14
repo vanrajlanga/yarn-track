@@ -44,17 +44,20 @@ export const Layout = ({ children }) => {
 					</div>
 
 					<nav className="space-y-1">
-						<Link
-							to="/dashboard"
-							className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
-								isActive("/dashboard")
-									? "bg-indigo-700"
-									: "hover:bg-indigo-700/50 transition-colors"
-							}`}
-						>
-							<Home className="h-5 w-5" />
-							<span>Dashboard</span>
-						</Link>
+						{/* Only show Dashboard for admin users */}
+						{currentUser.role === "admin" && (
+							<Link
+								to="/dashboard"
+								className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+									isActive("/dashboard")
+										? "bg-indigo-700"
+										: "hover:bg-indigo-700/50 transition-colors"
+								}`}
+							>
+								<Home className="h-5 w-5" />
+								<span>Dashboard</span>
+							</Link>
+						)}
 
 						<Link
 							to="/orders"

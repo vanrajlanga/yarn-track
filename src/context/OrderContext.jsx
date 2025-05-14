@@ -40,19 +40,23 @@ import { API_URL } from "../config";
 const OrderContext = createContext(undefined);
 
 export const OrderProvider = ({ children }) => {
+	const { currentUser } = useAuth();
+	const isFactoryUser = currentUser?.role === "factory";
+
+	// Default status is empty for factory users, requiring them to select a status
+	const defaultStatus = isFactoryUser ? "" : "all";
+
 	const [orders, setOrders] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [salesUsers, setSalesUsers] = useState([]);
 	const [filters, setFilters] = useState({
-		status: "all",
+		status: defaultStatus,
 		searchTerm: "",
 		salespersonId: "all",
 		startDate: "",
 		endDate: "",
 	});
-
-	const { currentUser } = useAuth();
 
 	// Define permissions based on user role
 	const canEditOrders = useMemo(() => {

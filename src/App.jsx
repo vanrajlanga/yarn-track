@@ -29,8 +29,44 @@ const ProtectedRoute = ({ children }) => {
 	return <>{children}</>;
 };
 
+// Admin-only route component
+const AdminRoute = ({ children }) => {
+	const { currentUser, isLoading } = useAuth();
+
+	// Don't redirect while still checking authentication
+	if (isLoading) {
+		return <div>Loading...</div>;
+	}
+
+	if (!currentUser) {
+		return <Navigate to="/login" replace />;
+	}
+
+	// Redirect non-admin users to orders page
+	if (currentUser.role !== "admin") {
+		return <Navigate to="/orders" replace />;
+	}
+
+	return <>{children}</>;
+};
+
 ProtectedRoute.propTypes = {
 	children: PropTypes.node.isRequired,
+};
+
+AdminRoute.propTypes = {
+	children: PropTypes.node.isRequired,
+};
+
+// Create a DefaultRedirect component that uses useAuth hook inside the AuthProvider
+const DefaultRedirect = () => {
+	const { currentUser } = useAuth();
+	const path = !currentUser
+		? "/login"
+		: currentUser.role === "admin"
+		? "/dashboard"
+		: "/orders";
+	return <Navigate to={path} replace />;
 };
 
 const App = () => {
@@ -40,16 +76,13 @@ const App = () => {
 				<Router>
 					<Routes>
 						<Route path="/login" element={<LoginPage />} />
-						<Route
-							path="/"
-							element={<Navigate to="/dashboard" replace />}
-						/>
+						<Route path="/" element={<DefaultRedirect />} />
 						<Route
 							path="/dashboard"
 							element={
-								<ProtectedRoute>
+								<AdminRoute>
 									<Dashboard />
-								</ProtectedRoute>
+								</AdminRoute>
 							}
 						/>
 						<Route
@@ -62,10 +95,7 @@ const App = () => {
 								</ProtectedRoute>
 							}
 						/>
-						<Route
-							path="*"
-							element={<Navigate to="/dashboard" replace />}
-						/>
+						<Route path="*" element={<DefaultRedirect />} />
 					</Routes>
 				</Router>
 			</OrderProvider>

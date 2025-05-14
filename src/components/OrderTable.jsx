@@ -4,26 +4,8 @@ import { format } from "date-fns";
 import { Button } from "./ui/Button";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../context/OrderContext";
-
-const statusColors = {
-	received: "bg-yellow-100 text-yellow-800",
-	dyeing: "bg-blue-100 text-blue-800",
-	dyeing_complete: "bg-green-100 text-green-800",
-	conning: "bg-blue-100 text-blue-800",
-	conning_complete: "bg-green-100 text-green-800",
-	packing: "bg-blue-100 text-blue-800",
-	packed: "bg-green-100 text-green-800",
-};
-
-const statusLabels = {
-	received: "Received / Booked",
-	dyeing: "Sent to Dyeing",
-	dyeing_complete: "Dyeing Complete",
-	conning: "Sent to Conning",
-	conning_complete: "Conning Complete",
-	packing: "Sent to Packing",
-	packed: "Packed / Ready for Dispatch",
-};
+import { getStatusColor, getStatusLabel } from "../utils/statusUtils";
+import { ORDER_STATUS_LABELS } from "../types";
 
 export const OrderTable = ({ orders, onStatusChange, onEdit, onDelete }) => {
 	const { currentUser } = useAuth();
@@ -91,11 +73,11 @@ export const OrderTable = ({ orders, onStatusChange, onEdit, onDelete }) => {
 							</td>
 							<td className="px-6 py-4 whitespace-nowrap">
 								<span
-									className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-										statusColors[order.currentStatus]
-									}`}
+									className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+										order.currentStatus
+									)}`}
 								>
-									{statusLabels[order.currentStatus]}
+									{getStatusLabel(order.currentStatus)}
 								</span>
 							</td>
 							{canEditOrders && (
@@ -111,16 +93,16 @@ export const OrderTable = ({ orders, onStatusChange, onEdit, onDelete }) => {
 											}
 											className="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
 										>
-											{Object.entries(statusLabels).map(
-												([value, label]) => (
-													<option
-														key={value}
-														value={value}
-													>
-														{label}
-													</option>
-												)
-											)}
+											{Object.entries(
+												ORDER_STATUS_LABELS
+											).map(([value, label]) => (
+												<option
+													key={value}
+													value={value}
+												>
+													{label}
+												</option>
+											))}
 										</select>
 										<Button
 											variant="outline"
