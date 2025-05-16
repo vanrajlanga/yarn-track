@@ -8,7 +8,6 @@ export const OrderFormFields = ({
 	errors,
 	handleChange,
 	salesUsers = [],
-	showSalespersonField = false,
 	isEditMode = false,
 }) => {
 	return (
@@ -89,31 +88,28 @@ export const OrderFormFields = ({
 					error={errors.deliveryParty}
 				/>
 			</div>
-
-			{showSalespersonField && (
-				<div>
-					<label
-						htmlFor="salespersonId"
-						className="block text-sm font-medium text-gray-700 mb-1"
-					>
-						Salesperson *
-					</label>
-					<Select
-						id="salespersonId"
-						name="salespersonId"
-						value={formData.salespersonId}
-						onChange={handleChange}
-						error={errors.salespersonId}
-					>
-						<option value="">Select Salesperson</option>
-						{salesUsers.map((user) => (
-							<option key={user.id} value={user.id}>
-								{user.username}
-							</option>
-						))}
-					</Select>
-				</div>
-			)}
+			<div>
+				<label
+					htmlFor="salespersonId"
+					className="block text-sm font-medium text-gray-700 mb-1"
+				>
+					Salesperson *
+				</label>
+				<Select
+					id="salespersonId"
+					name="salespersonId"
+					value={formData.salespersonId}
+					onChange={handleChange}
+					error={errors.salespersonId}
+				>
+					<option value="">Select Salesperson</option>
+					{salesUsers.map((user) => (
+						<option key={user.id} value={user.id}>
+							{user.username}
+						</option>
+					))}
+				</Select>
+			</div>
 		</div>
 	);
 };
@@ -123,6 +119,5 @@ OrderFormFields.propTypes = {
 	errors: PropTypes.object.isRequired,
 	handleChange: PropTypes.func.isRequired,
 	salesUsers: PropTypes.array,
-	showSalespersonField: PropTypes.bool,
 	isEditMode: PropTypes.bool,
 };

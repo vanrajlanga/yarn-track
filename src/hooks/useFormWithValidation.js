@@ -72,7 +72,10 @@ export const useFormWithValidation = (
 	};
 
 	const handleSubmit = (e) => {
-		e.preventDefault();
+		// If e is an event object, prevent default behavior
+		if (e && typeof e.preventDefault === "function") {
+			e.preventDefault();
+		}
 
 		const validationErrors = validateFn ? validateFn(formData) : {};
 		setErrors(validationErrors);

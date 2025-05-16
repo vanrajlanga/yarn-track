@@ -41,7 +41,7 @@ export const OrderDashboard = () => {
 
 	// Fetch sales users only once when component mounts
 	useEffect(() => {
-		if (["admin", "operator"].includes(currentUser?.role)) {
+		if (["admin", "operator", "sales"].includes(currentUser?.role)) {
 			fetchSalesUsers();
 		}
 	}, [currentUser, fetchSalesUsers]);
@@ -90,11 +90,20 @@ export const OrderDashboard = () => {
 	};
 
 	// Form submission handler
+	const [formError, setFormError] = useState(null);
+
 	const handleFormSubmit = async (formData) => {
-		if (!currentUser || !canAddOrders) return;
+		console.log("Form submission started with data:", formData);
+		setFormError(null); // Clear any previous errors
+
+		if (!currentUser || !canAddOrders) {
+			console.log("Submission blocked - no user or no permission");
+			return;
+		}
 
 		// Validate that at least one item exists (deniers or SL numbers)
 		if (!validateOrderItems(formData)) {
+			console.log("Validation failed - no valid items");
 			alert(
 				"You must enter at least one Denier or one SL Number with Quantity."
 			);
@@ -110,6 +119,19 @@ export const OrderDashboard = () => {
 				item.quantity !== ""
 		);
 
+		console.log("Processing order items...");
+		// Process orderItems for submission
+		const processedOrderItems = formData.orderItems
+			.filter(
+				(item) =>
+					(item.denier && item.denier.trim()) ||
+					(item.slNumber && item.slNumber.trim())
+			)
+			.map((item) => ({
+				...item,
+				quantity: item.quantity ? Number(item.quantity) : 1,
+			}));
+
 		// Determine which salesperson ID to use
 		const salespersonId = ["admin", "operator"].includes(currentUser.role)
 			? formData.salespersonId // Use the selected salesperson for admin/operator
@@ -123,18 +145,6 @@ export const OrderDashboard = () => {
 					(u) => u.id.toString() === formData.salespersonId.toString()
 			  ) || { id: formData.salespersonId, username: "Unknown" }
 			: { id: currentUser.id, username: currentUser.username };
-
-		// Process orderItems for submission
-		const processedOrderItems = formData.orderItems
-			.filter(
-				(item) =>
-					(item.denier && item.denier.trim()) ||
-					(item.slNumber && item.slNumber.trim())
-			)
-			.map((item) => ({
-				...item,
-				quantity: item.quantity ? Number(item.quantity) : 1,
-			}));
 
 		try {
 			await createOrder({
@@ -151,6 +161,23 @@ export const OrderDashboard = () => {
 			refreshOrders(); // Refresh orders after creating a new one
 		} catch (error) {
 			console.error("Failed to create order:", error);
+			const errorMessage =
+				error.response?.data?.error || "Failed to create order";
+
+			if (error.response?.data?.field === "sdyNumber") {
+				setFormError({
+					field: "sdyNumber",
+					message: errorMessage,
+				});
+			} else {
+				setFormError({
+					field: "general",
+					message: errorMessage,
+				});
+			}
+
+			// Don't close the form so user can correct the error
+			return;
 		}
 	};
 
@@ -214,6 +241,35 @@ export const OrderDashboard = () => {
 			);
 			return { ...prev, slNumbersWithQuantities: newItems };
 		});
+	};
+
+	const handleOrderItemChange = (index, field, value) => {
+		setNewOrder((prev) => {
+			const newItems = [...prev.orderItems];
+			newItems[index] = {
+				...newItems[index],
+				[field]: value,
+			};
+			return { ...prev, orderItems: newItems };
+		});
+	};
+
+	const handleAddOrderItem = () => {
+		setNewOrder((prev) => ({
+			...prev,
+			orderItems: [
+				...prev.orderItems,
+				{ denier: "", slNumber: "", quantity: "" },
+			],
+		}));
+	};
+
+	const handleRemoveOrderItem = (index) => {
+		if (newOrder.orderItems.length <= 1) return; // Keep at least one item
+		setNewOrder((prev) => ({
+			...prev,
+			orderItems: prev.orderItems.filter((_, i) => i !== index),
+		}));
 	};
 
 	const handleSearch = () => {
@@ -346,6 +402,7 @@ export const OrderDashboard = () => {
 					title="Add New Order"
 					formData={newOrder}
 					errors={errors}
+					formError={formError}
 					salesUsers={salesUsers}
 					showSalespersonField={["admin", "operator"].includes(
 						currentUser?.role
@@ -363,6 +420,10 @@ export const OrderDashboard = () => {
 					}
 					onAddSlNumberWithQuantity={addSlNumberWithQuantity}
 					onRemoveSlNumberWithQuantity={removeSlNumberWithQuantity}
+					orderItems={newOrder.orderItems}
+					handleOrderItemChange={handleOrderItemChange}
+					handleAddOrderItem={handleAddOrderItem}
+					handleRemoveOrderItem={handleRemoveOrderItem}
 					submitButtonText="Create Order"
 				/>
 			)}

@@ -213,7 +213,8 @@ export const OrdersTable = ({
 			const newOrderItems = [...prev.orderItems];
 			newOrderItems[index] = {
 				...newOrderItems[index],
-				[field]: value,
+				[field]:
+					field === "quantity" && value ? parseInt(value, 10) : value,
 			};
 			return {
 				...prev,
@@ -235,10 +236,15 @@ export const OrdersTable = ({
 
 	// Handle removing order item
 	const handleRemoveOrderItem = (index) => {
-		setOrderFormData((prev) => ({
-			...prev,
-			orderItems: prev.orderItems.filter((_, i) => i !== index),
-		}));
+		setOrderFormData((prev) => {
+			if (prev.orderItems.length <= 1) {
+				return prev; // Keep at least one item
+			}
+			return {
+				...prev,
+				orderItems: prev.orderItems.filter((_, i) => i !== index),
+			};
+		});
 	};
 
 	// Handle form submission for editing

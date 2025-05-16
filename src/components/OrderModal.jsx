@@ -11,6 +11,7 @@ export const OrderModal = ({
 	title = "Add New Order",
 	formData,
 	errors = {},
+	formError = null,
 	salesUsers = [],
 	showSalespersonField = false,
 	onClose,
@@ -26,6 +27,18 @@ export const OrderModal = ({
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
 			<div className="bg-white p-6 rounded-lg w-full max-w-5xl max-h-screen overflow-y-auto">
 				<h3 className="text-xl font-bold mb-4">{title}</h3>
+
+				{formError && formError.message && (
+					<div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+						<div className="flex">
+							<div className="ml-3">
+								<p className="text-sm text-red-700">
+									{formError.message}
+								</p>
+							</div>
+						</div>
+					</div>
+				)}
 
 				{isOneTimeEdit && (
 					<div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
@@ -43,7 +56,12 @@ export const OrderModal = ({
 					</div>
 				)}
 
-				<form onSubmit={onSubmit} className="space-y-6">
+				<form
+					onSubmit={(e) => {
+						onSubmit(e);
+					}}
+					className="space-y-6"
+				>
 					<div className="bg-gray-50 p-4 rounded-md">
 						<h4 className="text-md font-medium mb-3 text-gray-700">
 							Order Details
@@ -95,6 +113,10 @@ OrderModal.propTypes = {
 	title: PropTypes.string,
 	formData: PropTypes.object.isRequired,
 	errors: PropTypes.object,
+	formError: PropTypes.shape({
+		field: PropTypes.string,
+		message: PropTypes.string,
+	}),
 	salesUsers: PropTypes.array,
 	showSalespersonField: PropTypes.bool,
 	onClose: PropTypes.func.isRequired,
