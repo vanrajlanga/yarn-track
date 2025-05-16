@@ -9,6 +9,7 @@ export const OrderFormFields = ({
 	handleChange,
 	salesUsers = [],
 	showSalespersonField = false,
+	isEditMode = false,
 }) => {
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -31,9 +32,16 @@ export const OrderFormFields = ({
 			<div>
 				<label
 					htmlFor="date"
-					className="block text-sm font-medium text-gray-700 mb-1"
+					className={`block text-sm font-medium ${
+						isEditMode ? "text-gray-500" : "text-gray-700"
+					} mb-1`}
 				>
-					Date *
+					Date *{" "}
+					{isEditMode && (
+						<span className="text-xs text-gray-500">
+							(Cannot be edited)
+						</span>
+					)}
 				</label>
 				<Input
 					type="date"
@@ -43,6 +51,10 @@ export const OrderFormFields = ({
 					onChange={handleChange}
 					min={new Date().toISOString().split("T")[0]}
 					error={errors.date}
+					disabled={isEditMode}
+					className={
+						isEditMode ? "bg-gray-100 cursor-not-allowed" : ""
+					}
 				/>
 			</div>
 
@@ -112,4 +124,5 @@ OrderFormFields.propTypes = {
 	handleChange: PropTypes.func.isRequired,
 	salesUsers: PropTypes.array,
 	showSalespersonField: PropTypes.bool,
+	isEditMode: PropTypes.bool,
 };

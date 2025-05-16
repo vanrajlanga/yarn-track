@@ -27,10 +27,24 @@ export const OrderDashboard = () => {
 		refreshOrders,
 		canEditOrders,
 		canAddOrders,
+		canRequestChanges,
 		salesUsers,
+		fetchSalesUsers,
 	} = useOrders();
 
 	const [showNewOrderForm, setShowNewOrderForm] = useState(false);
+
+	// Fetch data when component mounts or filters change
+	useEffect(() => {
+		refreshOrders();
+	}, [filters, refreshOrders]);
+
+	// Fetch sales users only once when component mounts
+	useEffect(() => {
+		if (["admin", "operator"].includes(currentUser?.role)) {
+			fetchSalesUsers();
+		}
+	}, [currentUser, fetchSalesUsers]);
 	const [isFilterOpen, setIsFilterOpen] = useState(false);
 	const [searchInput, setSearchInput] = useState("");
 
@@ -316,7 +330,9 @@ export const OrderDashboard = () => {
 				<OrdersTable
 					orders={displayOrders}
 					canEditOrders={canEditOrders}
+					canRequestChanges={canRequestChanges}
 					onStatusUpdate={handleStatusUpdate}
+					refreshOrders={refreshOrders}
 					isFactoryUser={isFactoryUser}
 					activeStatusFilter={
 						filters.status !== "all" ? filters.status : null

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useOrders } from "../context/OrderContext";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import {
@@ -26,33 +26,67 @@ const COLORS = [
 
 export const AnalyticsDashboard = () => {
 	const { orders } = useOrders();
+	const [isLoading, setIsLoading] = useState(true);
 
-	// Calculate orders by status
-	const ordersByStatus = orders.reduce((acc, order) => {
-		acc[order.currentStatus] = (acc[order.currentStatus] || 0) + 1;
-		return acc;
-	}, {});
+	useEffect(() => {
+		// If we have orders, we don't need to wait
+		if (orders.length > 0) {
+			setIsLoading(false);
+		}
+	}, [orders]);
 
-	const statusData = Object.entries(ordersByStatus).map(
-		([status, count]) => ({
-			name: status,
-			value: count,
-		})
-	);
+	// Memoize computed analytics data
+	const analyticsData = useMemo(() => {
+		if (!orders.length) return null;
 
-	// Calculate orders by date (last 7 days)
-	const last7Days = Array.from({ length: 7 }, (_, i) => {
-		const date = subDays(new Date(), i);
+		// Calculate orders by status
+		const ordersByStatus = orders.reduce((acc, order) => {
+			acc[order.currentStatus] = (acc[order.currentStatus] || 0) + 1;
+			return acc;
+		}, {});
+
+		const statusData = Object.entries(ordersByStatus).map(
+			([status, count]) => ({
+				name: status,
+				value: count,
+			})
+		);
+
+		// Calculate orders by date (last 7 days)
+		const last7Days = Array.from({ length: 7 }, (_, i) => {
+			const date = subDays(new Date(), i);
+			return {
+				date: format(date, "MMM dd"),
+				count: orders.filter((order) => {
+					const orderDate = new Date(order.date);
+					return (
+						orderDate >= startOfDay(date) &&
+						orderDate <= endOfDay(date)
+					);
+				}).length,
+			};
+		}).reverse();
+
 		return {
-			date: format(date, "MMM dd"),
-			count: orders.filter((order) => {
-				const orderDate = new Date(order.date);
-				return (
-					orderDate >= startOfDay(date) && orderDate <= endOfDay(date)
-				);
-			}).length,
+			statusData,
+			last7Days,
+			totalActive: orders.filter((o) => o.currentStatus !== "packed")
+				.length,
+			totalCompleted: orders.filter((o) => o.currentStatus === "packed")
+				.length,
 		};
-	}).reverse();
+	}, [orders]);
+
+	if (isLoading || !analyticsData) {
+		return (
+			<div className="flex items-center justify-center h-64">
+				<div className="text-gray-500">Loading analytics data...</div>
+			</div>
+		);
+	}
+
+	const { statusData, last7Days, totalActive, totalCompleted } =
+		analyticsData;
 
 	// Calculate total orders and average orders per day
 	const totalOrders = orders.length;
@@ -154,7 +188,7 @@ export const AnalyticsDashboard = () => {
 										Completed Orders
 									</dt>
 									<dd className="text-lg font-medium text-gray-900">
-										{ordersByStatus["packed"] || 0}
+										{totalCompleted}
 									</dd>
 								</dl>
 							</div>

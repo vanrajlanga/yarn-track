@@ -4,6 +4,7 @@ import React, {
 	useState,
 	useEffect,
 	useMemo,
+	useCallback,
 } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./AuthContext";
@@ -41,45 +42,36 @@ const OrderContext = createContext(undefined);
 
 export const OrderProvider = ({ children }) => {
 	const { currentUser } = useAuth();
-	const isFactoryUser = currentUser?.role === "factory";
-
-	// Default status is empty for factory users, requiring them to select a status
-	const defaultStatus = isFactoryUser ? "" : "all";
-
 	const [orders, setOrders] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
 	const [salesUsers, setSalesUsers] = useState([]);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState(null);
 	const [filters, setFilters] = useState({
-		status: defaultStatus,
+		status: "all",
 		searchTerm: "",
 		salespersonId: "all",
 		startDate: "",
 		endDate: "",
 	});
 
-	// Define permissions based on user role
-	const canEditOrders = useMemo(() => {
-		if (!currentUser) return false;
-		// Admin users can only view orders, not edit them
-		if (currentUser.role === "admin") return false;
-		// Operators can add orders but not edit them
-		if (currentUser.role === "operator") return false;
-		// Only factory role can edit orders now
-		return ["factory"].includes(currentUser.role);
-	}, [currentUser]);
+	// Memoize permission checks
+	const canEditOrders = useMemo(
+		() => ["factory", "operator"].includes(currentUser?.role),
+		[currentUser]
+	);
 
-	const canAddOrders = useMemo(() => {
-		if (!currentUser) return false;
-		// Admin users can only view orders, not add them
-		if (currentUser.role === "admin") return false;
-		// Factory users can edit orders but not add them
-		if (currentUser.role === "factory") return false;
-		// Only operators can add orders
-		return ["operator"].includes(currentUser.role);
-	}, [currentUser]);
+	const canAddOrders = useMemo(
+		() => ["sales"].includes(currentUser?.role),
+		[currentUser]
+	);
 
-	const constructQueryParams = () => {
+	const canRequestChanges = useMemo(
+		() => ["factory", "operator"].includes(currentUser?.role),
+		[currentUser]
+	);
+
+	// Memoize query params construction
+	const constructQueryParams = useCallback(() => {
 		const params = new URLSearchParams();
 		if (filters.status !== "all") params.append("status", filters.status);
 		if (filters.searchTerm) params.append("searchTerm", filters.searchTerm);
@@ -88,52 +80,18 @@ export const OrderProvider = ({ children }) => {
 		if (filters.startDate) params.append("startDate", filters.startDate);
 		if (filters.endDate) params.append("endDate", filters.endDate);
 		return params.toString();
-	};
+	}, [filters]);
 
-	const fetchSalesUsers = async () => {
-		try {
-			const token = localStorage.getItem("token");
-			if (!token) {
-				return;
-			}
+	// Memoize fetch function
+	const fetchOrders = useCallback(async () => {
+		if (!currentUser) return;
 
-			// Only admin and operator need to fetch sales users
-			if (
-				!currentUser ||
-				!["admin", "operator"].includes(currentUser.role)
-			) {
-				return;
-			}
-
-			const response = await fetch(`${API_URL}/auth/sales-users`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Failed to fetch sales users: ${response.status} ${response.statusText}`
-				);
-			}
-
-			const data = await response.json();
-			console.log("Sales users fetched:", data); // Debug log
-			setSalesUsers(data);
-		} catch (err) {
-			console.error("Error fetching sales users:", err);
-		}
-	};
-
-	const fetchOrders = async () => {
 		setLoading(true);
 		setError(null);
 		try {
 			const token = localStorage.getItem("token");
 			if (!token) {
-				setError("Not authenticated");
-				setLoading(false);
-				return;
+				throw new Error("Not authenticated");
 			}
 
 			const queryParams = constructQueryParams();
@@ -163,19 +121,42 @@ export const OrderProvider = ({ children }) => {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [currentUser, constructQueryParams]);
 
-	// Fetch orders when currentUser changes or filters change
+	// Expose fetchOrders as refreshOrders for components
+	const refreshOrders = useCallback(fetchOrders, [fetchOrders]);
+
+	// Fetch orders when filters or current user changes
 	useEffect(() => {
 		if (currentUser) {
 			fetchOrders();
 		}
-	}, [currentUser, filters]);
+	}, [currentUser, fetchOrders]);
 
-	// Fetch sales users when currentUser changes
-	useEffect(() => {
-		if (currentUser) {
-			fetchSalesUsers();
+	const fetchSalesUsers = useCallback(async () => {
+		try {
+			const token = localStorage.getItem("token");
+			if (!token) {
+				return;
+			}
+
+			const response = await fetch(`${API_URL}/auth/sales-users`, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					`Failed to fetch sales users: ${response.status} ${response.statusText}`
+				);
+			}
+
+			const data = await response.json();
+			console.log("Sales users fetched:", data); // Debug log
+			setSalesUsers(data);
+		} catch (err) {
+			console.error("Error fetching sales users:", err);
 		}
 	}, [currentUser]);
 
@@ -289,10 +270,12 @@ export const OrderProvider = ({ children }) => {
 				setFilters,
 				createOrder,
 				updateOrderStatus,
-				refreshOrders: fetchOrders,
+				refreshOrders,
 				canEditOrders,
 				canAddOrders,
+				canRequestChanges,
 				salesUsers,
+				fetchSalesUsers,
 			}}
 		>
 			{children}

@@ -6,12 +6,15 @@ import {
 	Route,
 	Navigate,
 } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { OrderProvider } from "./context/OrderContext";
 import { LoginPage } from "./pages/LoginPage";
 import { Dashboard } from "./pages/Dashboard";
 import { Layout } from "./components/Layout";
 import { OrderDashboard } from "./components/OrderDashboard";
+import ChangeRequestsPage from "./pages/ChangeRequestsPage";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -95,8 +98,17 @@ const App = () => {
 								</ProtectedRoute>
 							}
 						/>
+						<Route
+							path="/change-requests"
+							element={
+								<ProtectedRoute>
+									<ChangeRequestsPage />
+								</ProtectedRoute>
+							}
+						/>
 						<Route path="*" element={<DefaultRedirect />} />
 					</Routes>
+					<ToastContainer />
 				</Router>
 			</OrderProvider>
 		</AuthProvider>

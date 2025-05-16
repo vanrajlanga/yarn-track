@@ -17,11 +17,32 @@ export const OrderModal = ({
 	onSubmit,
 	handleChange,
 	submitButtonText = "Create Order",
+	isOneTimeEdit = false,
+	handleOrderItemChange,
+	handleAddOrderItem,
+	handleRemoveOrderItem,
 }) => {
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
 			<div className="bg-white p-6 rounded-lg w-full max-w-5xl max-h-screen overflow-y-auto">
 				<h3 className="text-xl font-bold mb-4">{title}</h3>
+
+				{isOneTimeEdit && (
+					<div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+						<div className="flex">
+							<div className="ml-3">
+								<p className="text-sm text-yellow-700">
+									<strong>Important:</strong> This is a
+									one-time edit opportunity. After submitting
+									these changes, you will need to submit a new
+									change request for any future edits to this
+									order.
+								</p>
+							</div>
+						</div>
+					</div>
+				)}
+
 				<form onSubmit={onSubmit} className="space-y-6">
 					<div className="bg-gray-50 p-4 rounded-md">
 						<h4 className="text-md font-medium mb-3 text-gray-700">
@@ -33,6 +54,7 @@ export const OrderModal = ({
 							handleChange={handleChange}
 							salesUsers={salesUsers}
 							showSalespersonField={showSalespersonField}
+							isEditMode={title === "Edit Order"}
 						/>
 					</div>
 
@@ -47,42 +69,9 @@ export const OrderModal = ({
 									{ denier: "", slNumber: "", quantity: "" },
 								]
 							}
-							onOrderItemChange={(index, field, value) =>
-								handleChange({
-									target: {
-										name: `orderItems[${index}].${field}`,
-										value,
-									},
-								})
-							}
-							onAddOrderItem={() => {
-								// Initialize the array if it doesn't exist yet
-								const currentItems = formData.orderItems || [
-									{ denier: "", slNumber: "", quantity: "" },
-								];
-								const updatedItems = [
-									...currentItems,
-									{ denier: "", slNumber: "", quantity: "" },
-								];
-								handleChange({
-									target: {
-										name: "orderItems",
-										value: updatedItems,
-									},
-								});
-							}}
-							onRemoveOrderItem={(index) => {
-								const updatedItems = [
-									...(formData.orderItems || []),
-								];
-								updatedItems.splice(index, 1);
-								handleChange({
-									target: {
-										name: "orderItems",
-										value: updatedItems,
-									},
-								});
-							}}
+							onOrderItemChange={handleOrderItemChange}
+							onAddOrderItem={handleAddOrderItem}
+							onRemoveOrderItem={handleRemoveOrderItem}
 						/>
 					</div>
 
@@ -112,4 +101,5 @@ OrderModal.propTypes = {
 	onSubmit: PropTypes.func.isRequired,
 	handleChange: PropTypes.func.isRequired,
 	submitButtonText: PropTypes.string,
+	isOneTimeEdit: PropTypes.bool,
 };
