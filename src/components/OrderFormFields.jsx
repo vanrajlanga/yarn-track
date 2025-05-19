@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
+import { useAuth } from "../context/AuthContext";
 
 export const OrderFormFields = ({
 	formData,
@@ -10,8 +11,21 @@ export const OrderFormFields = ({
 	salesUsers = [],
 	isEditMode = false,
 }) => {
+	const { currentUser } = useAuth();
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			{isEditMode && currentUser?.role === "factory" && (
+				<div className="col-span-full bg-blue-50 border-l-4 border-blue-400 p-4">
+					<div className="flex">
+						<div className="ml-3">
+							<p className="text-sm text-blue-700">
+								As a factory user, you can only edit the
+								Delivery Party field. Other fields are disabled.
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 			<div>
 				<label
 					htmlFor="sdyNumber"
@@ -25,6 +39,12 @@ export const OrderFormFields = ({
 					value={formData.sdyNumber || "SDY -"}
 					onChange={handleChange}
 					error={errors.sdyNumber}
+					disabled={isEditMode && currentUser?.role === "factory"}
+					className={
+						isEditMode && currentUser?.role === "factory"
+							? "bg-gray-100 cursor-not-allowed"
+							: ""
+					}
 				/>
 			</div>
 
@@ -70,6 +90,12 @@ export const OrderFormFields = ({
 					value={formData.partyName}
 					onChange={handleChange}
 					error={errors.partyName}
+					disabled={isEditMode && currentUser?.role === "factory"}
+					className={
+						isEditMode && currentUser?.role === "factory"
+							? "bg-gray-100 cursor-not-allowed"
+							: ""
+					}
 				/>
 			</div>
 
@@ -101,6 +127,12 @@ export const OrderFormFields = ({
 					value={formData.salespersonId}
 					onChange={handleChange}
 					error={errors.salespersonId}
+					disabled={isEditMode && currentUser?.role === "factory"}
+					className={
+						isEditMode && currentUser?.role === "factory"
+							? "bg-gray-100 cursor-not-allowed"
+							: ""
+					}
 				>
 					<option value="">Select Salesperson</option>
 					{salesUsers.map((user) => (

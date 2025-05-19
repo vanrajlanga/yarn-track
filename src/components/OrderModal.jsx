@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { Button } from "./ui/Button";
 import { OrderFormFields } from "./OrderFormFields";
 import { OrderItemFields } from "./OrderItemFields";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * Modal for adding or editing an order
@@ -23,6 +24,7 @@ export const OrderModal = ({
 	handleAddOrderItem,
 	handleRemoveOrderItem,
 }) => {
+	const { currentUser } = useAuth();
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
 			<div className="bg-white p-6 rounded-lg w-full max-w-5xl max-h-screen overflow-y-auto">
@@ -90,6 +92,10 @@ export const OrderModal = ({
 							onOrderItemChange={handleOrderItemChange}
 							onAddOrderItem={handleAddOrderItem}
 							onRemoveOrderItem={handleRemoveOrderItem}
+							disabled={
+								title === "Edit Order" &&
+								currentUser?.role === "factory"
+							}
 						/>
 					</div>
 

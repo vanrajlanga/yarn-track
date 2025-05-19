@@ -48,37 +48,18 @@ export const OrderFilters = ({
 							className="block w-full cursor-pointer appearance-none rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
 							style={{ height: "42px" }}
 						>
-							{isFactoryUser ? (
-								<>
-									<option value="">Select Status</option>
-									<option value="received">Received</option>
-									<option value="dyeing">Dyeing</option>
-									<option value="dyeing_complete">
-										Dyeing Complete
-									</option>
-									<option value="conning">Conning</option>
-									<option value="conning_complete">
-										Conning Complete
-									</option>
-									<option value="packing">Packing</option>
-									<option value="packed">Packed</option>
-								</>
-							) : (
-								<>
-									<option value="all">All Statuses</option>
-									<option value="received">Received</option>
-									<option value="dyeing">Dyeing</option>
-									<option value="dyeing_complete">
-										Dyeing Complete
-									</option>
-									<option value="conning">Conning</option>
-									<option value="conning_complete">
-										Conning Complete
-									</option>
-									<option value="packing">Packing</option>
-									<option value="packed">Packed</option>
-								</>
-							)}
+							<option value="all">All Statuses</option>
+							<option value="received">Received</option>
+							<option value="dyeing">Dyeing</option>
+							<option value="dyeing_complete">
+								Dyeing Complete
+							</option>
+							<option value="conning">Conning</option>
+							<option value="conning_complete">
+								Conning Complete
+							</option>
+							<option value="packing">Packing</option>
+							<option value="packed">Packed</option>
 						</select>
 						<div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
 							<svg

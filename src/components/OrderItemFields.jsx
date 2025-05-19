@@ -9,6 +9,7 @@ export const OrderItemFields = ({
 	onOrderItemChange,
 	onAddOrderItem,
 	onRemoveOrderItem,
+	disabled = false,
 }) => {
 	return (
 		<div className="space-y-4">
@@ -23,6 +24,7 @@ export const OrderItemFields = ({
 						size="sm"
 						onClick={onAddOrderItem}
 						className="flex items-center"
+						disabled={disabled}
 					>
 						<Plus className="h-4 w-4 mr-1" /> Add Item
 					</Button>
@@ -48,6 +50,7 @@ export const OrderItemFields = ({
 							className="grid grid-cols-12 gap-4 items-center bg-gray-50 p-2 rounded"
 						>
 							<div className="col-span-5">
+								{" "}
 								<Input
 									value={item.denier}
 									onChange={(e) =>
@@ -58,9 +61,16 @@ export const OrderItemFields = ({
 										)
 									}
 									placeholder="Denier"
+									disabled={disabled}
+									className={
+										disabled
+											? "bg-gray-100 cursor-not-allowed"
+											: ""
+									}
 								/>
 							</div>
 							<div className="col-span-5">
+								{" "}
 								<Input
 									value={item.slNumber}
 									onChange={(e) =>
@@ -71,9 +81,16 @@ export const OrderItemFields = ({
 										)
 									}
 									placeholder="SL Number"
+									disabled={disabled}
+									className={
+										disabled
+											? "bg-gray-100 cursor-not-allowed"
+											: ""
+									}
 								/>
 							</div>
 							<div className="col-span-1 relative">
+								{" "}
 								<Input
 									type="number"
 									value={item.quantity}
@@ -85,6 +102,12 @@ export const OrderItemFields = ({
 											"quantity",
 											e.target.value ? e.target.value : ""
 										)
+									}
+									disabled={disabled}
+									className={
+										disabled
+											? "bg-gray-100 cursor-not-allowed"
+											: ""
 									}
 								/>
 								<div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -99,6 +122,7 @@ export const OrderItemFields = ({
 										size="sm"
 										onClick={() => onRemoveOrderItem(index)}
 										title="Remove item"
+										disabled={disabled}
 									>
 										<Trash2 className="h-4 w-4 text-red-500" />
 									</Button>
@@ -123,4 +147,5 @@ OrderItemFields.propTypes = {
 	onOrderItemChange: PropTypes.func.isRequired,
 	onAddOrderItem: PropTypes.func.isRequired,
 	onRemoveOrderItem: PropTypes.func.isRequired,
+	disabled: PropTypes.bool,
 };

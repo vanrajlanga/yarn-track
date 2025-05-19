@@ -3,8 +3,10 @@ import PropTypes from "prop-types";
 import { format } from "date-fns";
 import { ORDER_STATUS_LABELS } from "../types";
 import { getStatusColor } from "../utils/statusUtils";
+import { useAuth } from "../context/AuthContext";
 import { StatusDropdown } from "./StatusDropdown";
 import { OrderItemsView } from "./OrderItemsView";
+import { OrderItemsDetailView } from "./OrderItemsDetailView";
 import { StatusHistory } from "./StatusHistory";
 import { Button } from "./ui/Button";
 import { ChangeRequestModal } from "./ChangeRequestModal";
@@ -30,6 +32,8 @@ export const OrdersTable = ({
 	const [loadingRequests, setLoadingRequests] = useState(false);
 	const [editingRequestId, setEditingRequestId] = useState(null);
 	const [editOrder, setEditOrder] = useState(null);
+	const [expandedOrder, setExpandedOrder] = useState(null);
+	const [itemsView, setItemsView] = useState(null);
 	const [orderFormData, setOrderFormData] = useState({
 		sdyNumber: "",
 		date: "",
@@ -38,7 +42,7 @@ export const OrdersTable = ({
 		salespersonId: "",
 		orderItems: [{ denier: "", slNumber: "", quantity: "" }],
 	});
-	const [expandedOrder, setExpandedOrder] = useState(null);
+	const { currentUser } = useAuth();
 
 	// Memoize orders.length to prevent unnecessary re-renders
 	const ordersCount = useMemo(() => orders.length, [orders]);
@@ -281,8 +285,18 @@ export const OrdersTable = ({
 				return;
 			}
 
-			// Create submitted data without the date field
-			const { date, ...submittedData } = orderFormData;
+			// Create submitted data based on user role
+			let submittedData;
+			if (currentUser.role === "factory") {
+				// For factory users, only send deliveryParty field
+				submittedData = {
+					deliveryParty: orderFormData.deliveryParty,
+				};
+			} else {
+				// For other users, send all fields except date
+				const { date, ...otherData } = orderFormData;
+				submittedData = otherData;
+			}
 
 			// Send the update to the server
 			const updateResponse = await fetch(
@@ -343,6 +357,29 @@ export const OrdersTable = ({
 		}
 	};
 
+	// Handler for order item updates
+	const handleOrderItemUpdate = (orderId, updatedItem) => {
+		setOrderFormData((prev) => {
+			const updatedOrders = orders.map((order) => {
+				if (order.id === orderId) {
+					return {
+						...order,
+						items: order.items.map((item) =>
+							item.id === updatedItem.id
+								? { ...item, ...updatedItem }
+								: item
+						),
+					};
+				}
+				return order;
+			});
+			return updatedOrders;
+		});
+
+		// Trigger a refresh to update the UI
+		refreshOrders();
+	};
+
 	return (
 		<>
 			<div className="overflow-x-auto">
@@ -391,34 +428,67 @@ export const OrdersTable = ({
 									}
 								>
 									<td className="px-6 py-4 w-10">
-										<button
-											onClick={() =>
-												setExpandedOrder(
-													expandedOrder === order.id
-														? null
-														: order.id
-												)
-											}
-											className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
-										>
-											<svg
-												className={`w-5 h-5 transform transition-transform duration-200 ${
-													expandedOrder === order.id
-														? "rotate-90"
-														: ""
-												}`}
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
+										<div className="flex space-x-2">
+											<button
+												onClick={() =>
+													setExpandedOrder(
+														expandedOrder ===
+															order.id
+															? null
+															: order.id
+													)
+												}
+												className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
 											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M9 5l7 7-7 7"
-												/>
-											</svg>
-										</button>
+												<svg
+													className={`w-5 h-5 transform transition-transform duration-200 ${
+														expandedOrder ===
+														order.id
+															? "rotate-90"
+															: ""
+													}`}
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M9 5l7 7-7 7"
+													/>
+												</svg>
+											</button>
+											<button
+												onClick={() =>
+													setItemsView(
+														itemsView === order.id
+															? null
+															: order.id
+													)
+												}
+												className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+												title="Toggle items view"
+											>
+												<svg
+													className={`w-5 h-5 transform transition-transform duration-200 ${
+														itemsView === order.id
+															? "rotate-90"
+															: ""
+													}`}
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M4 6h16M4 12h16m-7 6h7"
+													/>
+												</svg>
+											</button>
+										</div>
 									</td>
 									<td className="px-6 py-4 whitespace-nowrap">
 										{order.sdyNumber}
@@ -525,6 +595,32 @@ export const OrdersTable = ({
 										</td>
 									)}
 								</tr>
+								{itemsView === order.id && (
+									<tr>
+										<td
+											colSpan={9}
+											className="px-6 py-4 bg-gray-50"
+										>
+											<div className="border-t border-b border-gray-200 py-4">
+												<OrderItemsDetailView
+													items={order.items}
+													canEdit={
+														currentUser.role ===
+														"factory"
+													}
+													onItemUpdate={(
+														updatedItem
+													) =>
+														handleOrderItemUpdate(
+															order.id,
+															updatedItem
+														)
+													}
+												/>
+											</div>
+										</td>
+									</tr>
+								)}
 								{expandedOrder === order.id && (
 									<tr>
 										<td

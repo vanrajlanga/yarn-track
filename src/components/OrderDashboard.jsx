@@ -297,11 +297,8 @@ export const OrderDashboard = () => {
 		setFilters(updatedFilters);
 	};
 
-	// Only show orders when a factory user has selected a specific status
-	const displayOrders =
-		isFactoryUser && (!filters.status || filters.status === "all")
-			? []
-			: orders;
+	// Display all orders regardless of user role
+	const displayOrders = orders;
 
 	if (loading) {
 		return <div className="p-4">Loading orders...</div>;
@@ -369,18 +366,10 @@ export const OrderDashboard = () => {
 					/>
 				)}
 
-				{/* Show a message when no status is selected for factory users */}
-				{isFactoryUser &&
-				(!filters.status || filters.status === "all") ? (
-					<div className="px-6 py-4 text-center text-gray-500">
-						Please select a status filter to view orders
-					</div>
-				) : (
-					<div className="px-6 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-500">
-						Showing {displayOrders.length} order
-						{displayOrders.length !== 1 ? "s" : ""}
-					</div>
-				)}
+				<div className="px-6 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-500">
+					Showing {displayOrders.length} order
+					{displayOrders.length !== 1 ? "s" : ""}
+				</div>
 
 				{/* Orders Table */}
 				<OrdersTable

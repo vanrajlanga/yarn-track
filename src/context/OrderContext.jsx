@@ -61,7 +61,7 @@ export const OrderProvider = ({ children }) => {
 	);
 
 	const canAddOrders = useMemo(
-		() => ["sales"].includes(currentUser?.role),
+		() => ["operator"].includes(currentUser?.role),
 		[currentUser]
 	);
 
