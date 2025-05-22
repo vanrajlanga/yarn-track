@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./ui/Button";
 import { useAuth } from "../context/AuthContext";
-import { API_URL } from "../config";
+import { format } from "date-fns";
+import { toast } from "react-toastify";
 
 export const ChangeRequestsTable = () => {
 	const { currentUser } = useAuth();
@@ -34,7 +35,7 @@ export const ChangeRequestsTable = () => {
 					return;
 				}
 
-				const response = await fetch(`${API_URL}/change-requests`, {
+				const response = await fetch(`${import.meta.env.VITE_API_URL}/change-requests`, {
 					headers: {
 						Authorization: `Bearer ${token}`,
 					},
@@ -100,7 +101,7 @@ export const ChangeRequestsTable = () => {
 			}
 
 			const response = await fetch(
-				`${API_URL}/change-requests/${selectedRequest.id}/process`,
+				`${import.meta.env.VITE_API_URL}/change-requests/${selectedRequest.id}/process`,
 				{
 					method: "PATCH",
 					headers: {

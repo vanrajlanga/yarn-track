@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./AuthContext";
-import { API_URL } from "../config";
 
 /**
  * @typedef {import('../types').Order} Order
@@ -102,7 +101,7 @@ export const OrderProvider = ({ children }) => {
 			}
 
 			const queryParams = constructQueryParams();
-			const url = `${API_URL}/orders${
+			const url = `${import.meta.env.VITE_API_URL}/orders${
 				queryParams ? `?${queryParams}` : ""
 			}`;
 
@@ -158,7 +157,7 @@ export const OrderProvider = ({ children }) => {
 				return;
 			}
 
-			const response = await fetch(`${API_URL}/auth/sales-users`, {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/sales-users`, {
 				headers: {
 					Authorization: `Bearer ${token}`,
 				},
@@ -196,7 +195,7 @@ export const OrderProvider = ({ children }) => {
 				return null;
 			}
 
-			const response = await fetch(`${API_URL}/orders`, {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

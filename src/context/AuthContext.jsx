@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
-import { API_URL } from "../config";
 
 const AuthContext = createContext(undefined);
 
@@ -11,7 +10,7 @@ export const AuthProvider = ({ children }) => {
 	// Function to verify token and get user data
 	const verifyToken = async (token) => {
 		try {
-			const response = await fetch(`${API_URL}/auth/me`, {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
 				headers: {
 					Authorization: `Bearer ${token}`,
 				},
@@ -47,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 	const login = async (username, password) => {
 		setIsLoading(true);
 		try {
-			const response = await fetch(`${API_URL}/auth/login`, {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

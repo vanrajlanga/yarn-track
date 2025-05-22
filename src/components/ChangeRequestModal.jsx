@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Button } from "./ui/Button";
 import { useAuth } from "../context/AuthContext";
-import { API_URL } from "../config";
+import { toast } from "react-toastify";
 
 export const ChangeRequestModal = ({ order, onClose, onSuccess }) => {
 	const { currentUser } = useAuth();
@@ -19,7 +19,7 @@ export const ChangeRequestModal = ({ order, onClose, onSuccess }) => {
 				if (!token) return;
 
 				const response = await fetch(
-					`${API_URL}/change-requests?orderId=${order.id}&status=pending`,
+					`${import.meta.env.VITE_API_URL}/change-requests?orderId=${order.id}&status=pending`,
 					{
 						headers: {
 							Authorization: `Bearer ${token}`,
@@ -49,14 +49,14 @@ export const ChangeRequestModal = ({ order, onClose, onSuccess }) => {
 		try {
 			const token = localStorage.getItem("token");
 			if (!token) {
-				setError("Authentication required");
+				toast.error("Authentication required");
 				setLoading(false);
 				return;
 			}
 
 			// Send request to create a simplified change request
 			const response = await fetch(
-				`${API_URL}/orders/${order.id}/request-change`,
+				`${import.meta.env.VITE_API_URL}/orders/${order.id}/request-change`,
 				{
 					method: "POST",
 					headers: {

@@ -11,7 +11,6 @@ import { StatusHistory } from "./StatusHistory";
 import { Button } from "./ui/Button";
 import { ChangeRequestModal } from "./ChangeRequestModal";
 import { OrderModal } from "./OrderModal";
-import { API_URL } from "../config";
 import { toast } from "react-toastify";
 import { useOrders } from "../context/OrderContext";
 
@@ -62,13 +61,13 @@ export const OrdersTable = ({
 
 			// Use Promise.all to fetch both requests simultaneously
 			const [pendingResponse, approvedResponse] = await Promise.all([
-				fetch(`${API_URL}/change-requests?status=pending`, {
+				fetch(`${import.meta.env.VITE_API_URL}/change-requests?status=pending`, {
 					headers: {
 						Authorization: `Bearer ${token}`,
 					},
 					signal: abortController.signal,
 				}),
-				fetch(`${API_URL}/change-requests?status=approved`, {
+				fetch(`${import.meta.env.VITE_API_URL}/change-requests?status=approved`, {
 					headers: {
 						Authorization: `Bearer ${token}`,
 					},
@@ -266,7 +265,7 @@ export const OrdersTable = ({
 
 			// First, mark the change request as used
 			const markUsedResponse = await fetch(
-				`${API_URL}/change-requests/${editingRequestId}/mark-used`,
+				`${import.meta.env.VITE_API_URL}/change-requests/${editingRequestId}/mark-used`,
 				{
 					method: "PATCH",
 					headers: {
@@ -302,7 +301,7 @@ export const OrdersTable = ({
 
 			// Send the update to the server
 			const updateResponse = await fetch(
-				`${API_URL}/orders/${editOrder.id}`,
+				`${import.meta.env.VITE_API_URL}/orders/${editOrder.id}`,
 				{
 					method: "PATCH",
 					headers: {

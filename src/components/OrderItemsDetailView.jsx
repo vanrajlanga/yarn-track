@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { API_URL } from "../config";
 import { toast } from "react-toastify";
 import { StatusDropdown } from "./StatusDropdown";
 import { getStatusColor } from "../utils/statusUtils";
@@ -21,7 +20,7 @@ export const OrderItemsDetailView = ({
 			}
 
 			const response = await fetch(
-				`${API_URL}/order-items/${itemId}/status`,
+				`${import.meta.env.VITE_API_URL}/order-items/${itemId}/status`,
 				{
 					method: "PUT",
 					headers: {
@@ -65,7 +64,7 @@ export const OrderItemsDetailView = ({
 				return;
 			}
 
-			const response = await fetch(`${API_URL}/order-items/${itemId}/history`, {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/order-items/${itemId}/history`, {
 				headers: {
 					Authorization: `Bearer ${token}`,
 				},
