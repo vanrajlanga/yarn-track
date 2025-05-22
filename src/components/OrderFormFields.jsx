@@ -12,15 +12,17 @@ export const OrderFormFields = ({
 	isEditMode = false,
 }) => {
 	const { currentUser } = useAuth();
+	const isFactoryEditing = isEditMode && currentUser?.role === "factory";
+
 	return (
 		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{isEditMode && currentUser?.role === "factory" && (
+			{isFactoryEditing && (
 				<div className="col-span-full bg-blue-50 border-l-4 border-blue-400 p-4">
 					<div className="flex">
 						<div className="ml-3">
 							<p className="text-sm text-blue-700">
-								As a factory user, you can only edit the
-								Delivery Party field. Other fields are disabled.
+								As a factory user, you can only edit the Delivery Party and SDY Number
+								field. Other fields are disabled.
 							</p>
 						</div>
 					</div>
@@ -39,9 +41,9 @@ export const OrderFormFields = ({
 					value={formData.sdyNumber || "SDY -"}
 					onChange={handleChange}
 					error={errors.sdyNumber}
-					disabled={isEditMode && currentUser?.role === "factory"}
+					disabled={isEditMode && !['operator', 'factory'].includes(currentUser?.role)}
 					className={
-						isEditMode && currentUser?.role === "factory"
+						isEditMode && !['operator', 'factory'].includes(currentUser?.role)
 							? "bg-gray-100 cursor-not-allowed"
 							: ""
 					}
@@ -90,9 +92,9 @@ export const OrderFormFields = ({
 					value={formData.partyName}
 					onChange={handleChange}
 					error={errors.partyName}
-					disabled={isEditMode && currentUser?.role === "factory"}
+					disabled={isEditMode && currentUser?.role !== 'operator'}
 					className={
-						isEditMode && currentUser?.role === "factory"
+						isEditMode && currentUser?.role !== 'operator'
 							? "bg-gray-100 cursor-not-allowed"
 							: ""
 					}
@@ -112,6 +114,12 @@ export const OrderFormFields = ({
 					value={formData.deliveryParty}
 					onChange={handleChange}
 					error={errors.deliveryParty}
+					disabled={isEditMode && !['operator', 'factory'].includes(currentUser?.role)}
+					className={
+						isEditMode && !['operator', 'factory'].includes(currentUser?.role)
+							? "bg-gray-100 cursor-not-allowed"
+							: ""
+					}
 				/>
 			</div>
 			<div>
@@ -127,9 +135,9 @@ export const OrderFormFields = ({
 					value={formData.salespersonId}
 					onChange={handleChange}
 					error={errors.salespersonId}
-					disabled={isEditMode && currentUser?.role === "factory"}
+					disabled={isEditMode && currentUser?.role !== 'operator'}
 					className={
-						isEditMode && currentUser?.role === "factory"
+						isEditMode && currentUser?.role !== 'operator'
 							? "bg-gray-100 cursor-not-allowed"
 							: ""
 					}

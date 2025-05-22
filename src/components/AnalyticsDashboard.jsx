@@ -14,6 +14,8 @@ import {
 	Pie,
 	Cell,
 } from "recharts";
+import { ORDER_STATUS_LABELS } from "../types";
+import { OrderFilters } from "./OrderFilters";
 
 const COLORS = [
 	"#0088FE",
@@ -25,29 +27,75 @@ const COLORS = [
 ];
 
 export const AnalyticsDashboard = () => {
-	const { orders } = useOrders();
+	const { allOrders, salesUsers, fetchSalesUsers } = useOrders();
 	const [isLoading, setIsLoading] = useState(true);
+
+	// Local state for analytics filters
+	const [analyticsFilters, setAnalyticsFilters] = useState({
+		status: "all",
+		searchTerm: "", // Although search is not a typical analytics filter, keeping for consistency if needed later
+		salespersonId: "all",
+		startDate: "",
+		endDate: "",
+	});
 
 	useEffect(() => {
 		// If we have orders, we don't need to wait
-		if (orders.length > 0) {
+		if (allOrders.length > 0) {
 			setIsLoading(false);
 		}
-	}, [orders]);
+	}, [allOrders]);
+
+	// Fetch sales users when the component mounts
+	useEffect(() => {
+		fetchSalesUsers();
+	}, [fetchSalesUsers]);
 
 	// Memoize computed analytics data
 	const analyticsData = useMemo(() => {
-		if (!orders.length) return null;
+		if (!allOrders.length) return null;
+
+		// Apply filters to the orders before calculating analytics
+		const filteredAnalyticsOrders = allOrders.filter(order => {
+			// Filter by status (if status filter is applied)
+			if (analyticsFilters.status !== "all") {
+				if (!order.items || !order.items.some(item => item.status === analyticsFilters.status)) {
+					return false; // Exclude if no item matches the status filter
+				}
+			}
+			// Filter by salesperson (if salesperson filter is applied)
+			if (analyticsFilters.salespersonId !== "all") {
+				if (order.salespersonId.toString() !== analyticsFilters.salespersonId.toString()) {
+					return false; // Exclude if salesperson doesn't match
+				}
+			}
+			// Filter by date range (if date filters are applied)
+			if (analyticsFilters.startDate) {
+				const startDate = new Date(analyticsFilters.startDate);
+				const orderDate = new Date(order.date);
+				if (orderDate < startOfDay(startDate)) return false;
+			}
+			if (analyticsFilters.endDate) {
+				const endDate = new Date(analyticsFilters.endDate);
+				const orderDate = new Date(order.date);
+				if (orderDate > endOfDay(endDate)) return false;
+			}
+			return true; // Include order if it passes all filters
+		});
 
 		// Calculate orders by status
-		const ordersByStatus = orders.reduce((acc, order) => {
-			acc[order.currentStatus] = (acc[order.currentStatus] || 0) + 1;
+		const ordersByStatus = filteredAnalyticsOrders.reduce((acc, order) => {
+			if (order.items && order.items.length > 0) {
+				order.items.forEach(item => {
+					acc[item.status] = (acc[item.status] || 0) + 1;
+				});
+			}
 			return acc;
 		}, {});
 
 		const statusData = Object.entries(ordersByStatus).map(
 			([status, count]) => ({
-				name: status,
+				name: ORDER_STATUS_LABELS[status] || status,
 				value: count,
 			})
 		);
@@ -57,7 +105,7 @@ export const AnalyticsDashboard = () => {
 			const date = subDays(new Date(), i);
 			return {
 				date: format(date, "MMM dd"),
-				count: orders.filter((order) => {
+				count: filteredAnalyticsOrders.filter((order) => {
 					const orderDate = new Date(order.date);
 					return (
 						orderDate >= startOfDay(date) &&
@@ -70,12 +118,21 @@ export const AnalyticsDashboard = () => {
 		return {
 			statusData,
 			last7Days,
-			totalActive: orders.filter((o) => o.currentStatus !== "packed")
-				.length,
-			totalCompleted: orders.filter((o) => o.currentStatus === "packed")
-				.length,
+			totalActive: filteredAnalyticsOrders.reduce((acc, order) => {
+				if (order.items) {
+					return acc + order.items.filter(item => item.status !== "packed").length;
+				}
+				return acc;
+			}, 0),
+			totalCompleted: filteredAnalyticsOrders.reduce((acc, order) => {
+				if (order.items) {
+					return acc + order.items.filter(item => item.status === "packed").length;
+				}
+				return acc;
+			}, 0),
+			totalOrders: filteredAnalyticsOrders.length,
 		};
-	}, [orders]);
+	}, [allOrders, analyticsFilters]);
 
 	if (isLoading || !analyticsData) {
 		return (
@@ -85,11 +142,10 @@ export const AnalyticsDashboard = () => {
 		);
 	}
 
-	const { statusData, last7Days, totalActive, totalCompleted } =
+	const { statusData, last7Days, totalActive, totalCompleted, totalOrders } =
 		analyticsData;
 
 	// Calculate total orders and average orders per day
-	const totalOrders = orders.length;
 	const avgOrdersPerDay = totalOrders / 7;
 
 	const renderCustomLabel = ({ name, percent }) => {
@@ -98,6 +154,20 @@ export const AnalyticsDashboard = () => {
 
 	return (
 		<div className="space-y-6">
+			{/* Analytics Filters */}
+			<div className="bg-white overflow-hidden shadow rounded-lg p-5 mb-6">
+				<h3 className="text-lg font-medium text-gray-900 mb-4">Filter Analytics Data</h3>
+				{/* Reusing OrderFilters component - assuming it's flexible enough */}
+				{/* Pass only the filters relevant to analytics */}
+				<OrderFilters
+					filters={analyticsFilters}
+					onFilterChange={setAnalyticsFilters}
+					showSalespersonFilter={true} // Assuming admin can always filter by salesperson in analytics
+					salesUsers={salesUsers}
+					isFactoryUser={false} // Analytics dashboard is for Admin, not Factory
+				/>
+			</div>
+
 			{/* Summary cards */}
 			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 				<div className="bg-white overflow-hidden shadow rounded-lg">

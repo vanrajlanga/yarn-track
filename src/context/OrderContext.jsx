@@ -42,7 +42,7 @@ const OrderContext = createContext(undefined);
 
 export const OrderProvider = ({ children }) => {
 	const { currentUser } = useAuth();
-	const [orders, setOrders] = useState([]);
+	const [allOrders, setAllOrders] = useState([]);
 	const [salesUsers, setSalesUsers] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
@@ -56,11 +56,13 @@ export const OrderProvider = ({ children }) => {
 
 	// Memoize permission checks
 	const canEditOrders = useMemo(
+		// Operator can edit all, Factory can edit only Party Name. Sales and Admin cannot edit.
 		() => ["factory", "operator"].includes(currentUser?.role),
 		[currentUser]
 	);
 
 	const canAddOrders = useMemo(
+		// Only operator role can add orders
 		() => ["operator"].includes(currentUser?.role),
 		[currentUser]
 	);
@@ -70,10 +72,15 @@ export const OrderProvider = ({ children }) => {
 		[currentUser]
 	);
 
+	const canChangeStatus = useMemo(
+		// Only operator role can change status
+		() => ["operator"].includes(currentUser?.role),
+		[currentUser]
+	);
+
 	// Memoize query params construction
 	const constructQueryParams = useCallback(() => {
 		const params = new URLSearchParams();
-		if (filters.status !== "all") params.append("status", filters.status);
 		if (filters.searchTerm) params.append("searchTerm", filters.searchTerm);
 		if (filters.salespersonId !== "all")
 			params.append("salespersonId", filters.salespersonId);
@@ -112,7 +119,7 @@ export const OrderProvider = ({ children }) => {
 			}
 
 			const data = await response.json();
-			setOrders(data);
+			setAllOrders(data);
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : "Failed to fetch orders"
@@ -132,6 +139,17 @@ export const OrderProvider = ({ children }) => {
 			fetchOrders();
 		}
 	}, [currentUser, fetchOrders]);
+
+	// Memoize filtered orders based on status
+	const filteredOrders = useMemo(() => {
+		if (filters.status === "all") {
+			return allOrders;
+		}
+
+		return allOrders.filter(order =>
+			order.items && order.items.some(item => item.status === filters.status)
+		);
+	}, [allOrders, filters.status]);
 
 	const fetchSalesUsers = useCallback(async () => {
 		try {
@@ -194,7 +212,7 @@ export const OrderProvider = ({ children }) => {
 			}
 
 			const newOrder = await response.json();
-			setOrders((prev) => [...prev, newOrder]);
+			setAllOrders((prev) => [...prev, newOrder]);
 			return newOrder;
 		} catch (err) {
 			setError(
@@ -205,79 +223,27 @@ export const OrderProvider = ({ children }) => {
 		}
 	};
 
-	/**
-	 * @param {string} orderId
-	 * @param {OrderStatus} status
-	 * @returns {Promise<Order|null>}
-	 */
-	const updateOrderStatus = async (orderId, status) => {
-		// Add permission check
-		if (!canEditOrders) {
-			setError("Not authorized to update order status");
-			return null;
-		}
-
-		try {
-			const token = localStorage.getItem("token");
-			if (!token) {
-				setError("Not authenticated");
-				return null;
-			}
-
-			const response = await fetch(
-				`${API_URL}/orders/${orderId}/status`,
-				{
-					method: "PATCH",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ status }),
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error(
-					`Failed to update order status: ${response.status} ${response.statusText}`
-				);
-			}
-
-			const updatedOrder = await response.json();
-			setOrders((prev) =>
-				prev.map((order) =>
-					order.id === orderId ? updatedOrder : order
-				)
-			);
-			return updatedOrder;
-		} catch (err) {
-			setError(
-				err instanceof Error
-					? err.message
-					: "Failed to update order status"
-			);
-			console.error("Error updating order status:", err);
-			return null;
-		}
-	};
+	const value = useMemo(
+		() => ({
+			orders: filteredOrders,
+			allOrders: allOrders,
+			salesUsers,
+			loading,
+			error,
+			filters,
+			setFilters,
+			createOrder,
+			refreshOrders,
+			canEditOrders,
+			canAddOrders,
+			canRequestChanges,
+			fetchSalesUsers,
+		}),
+		[allOrders, filteredOrders, salesUsers, loading, error, filters, setFilters, createOrder, refreshOrders, canEditOrders, canAddOrders, canRequestChanges, fetchSalesUsers]
+	);
 
 	return (
-		<OrderContext.Provider
-			value={{
-				orders,
-				loading,
-				error,
-				filters,
-				setFilters,
-				createOrder,
-				updateOrderStatus,
-				refreshOrders,
-				canEditOrders,
-				canAddOrders,
-				canRequestChanges,
-				salesUsers,
-				fetchSalesUsers,
-			}}
-		>
+		<OrderContext.Provider value={value}>
 			{children}
 		</OrderContext.Provider>
 	);

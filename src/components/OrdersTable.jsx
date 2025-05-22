@@ -13,6 +13,7 @@ import { ChangeRequestModal } from "./ChangeRequestModal";
 import { OrderModal } from "./OrderModal";
 import { API_URL } from "../config";
 import { toast } from "react-toastify";
+import { useOrders } from "../context/OrderContext";
 
 /**
  * A component for displaying orders in a table format
@@ -21,7 +22,6 @@ export const OrdersTable = ({
 	orders,
 	canEditOrders,
 	canRequestChanges = false,
-	onStatusUpdate,
 	refreshOrders,
 	isFactoryUser = false,
 	activeStatusFilter = null,
@@ -32,7 +32,6 @@ export const OrdersTable = ({
 	const [loadingRequests, setLoadingRequests] = useState(false);
 	const [editingRequestId, setEditingRequestId] = useState(null);
 	const [editOrder, setEditOrder] = useState(null);
-	const [expandedOrder, setExpandedOrder] = useState(null);
 	const [itemsView, setItemsView] = useState(null);
 	const [orderFormData, setOrderFormData] = useState({
 		sdyNumber: "",
@@ -43,6 +42,9 @@ export const OrdersTable = ({
 		orderItems: [{ denier: "", slNumber: "", quantity: "" }],
 	});
 	const { currentUser } = useAuth();
+
+	// Get canChangeStatus from context
+	const { canChangeStatus } = useOrders();
 
 	// Memoize orders.length to prevent unnecessary re-renders
 	const ordersCount = useMemo(() => orders.length, [orders]);
@@ -407,9 +409,7 @@ export const OrdersTable = ({
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 								Salesperson
 							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-								Status
-							</th>
+							{/* Actions column remains if either edit or change request is allowed */}
 							{(canEditOrders || canRequestChanges) && (
 								<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Actions
@@ -420,45 +420,9 @@ export const OrdersTable = ({
 					<tbody className="bg-white divide-y divide-gray-200">
 						{orders.map((order) => (
 							<React.Fragment key={order.id}>
-								<tr
-									className={
-										expandedOrder === order.id
-											? "bg-gray-50"
-											: ""
-									}
-								>
+								<tr>
 									<td className="px-6 py-4 w-10">
 										<div className="flex space-x-2">
-											<button
-												onClick={() =>
-													setExpandedOrder(
-														expandedOrder ===
-															order.id
-															? null
-															: order.id
-													)
-												}
-												className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
-											>
-												<svg
-													className={`w-5 h-5 transform transition-transform duration-200 ${
-														expandedOrder ===
-														order.id
-															? "rotate-90"
-															: ""
-													}`}
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M9 5l7 7-7 7"
-													/>
-												</svg>
-											</button>
 											<button
 												onClick={() =>
 													setItemsView(
@@ -511,34 +475,9 @@ export const OrdersTable = ({
 									<td className="px-6 py-4 whitespace-nowrap">
 										{order.salesperson?.username}
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap">
-										<span
-											className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-												order.currentStatus
-											)}`}
-										>
-											{
-												ORDER_STATUS_LABELS[
-													order.currentStatus
-												]
-											}
-										</span>
-									</td>
+									{/* Actions column remains if either edit or change request is allowed */}
 									{(canEditOrders || canRequestChanges) && (
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-											{canEditOrders && (
-												<StatusDropdown
-													value={order.currentStatus}
-													onChange={(e) =>
-														onStatusUpdate(
-															order.id,
-															e.target.value
-														)
-													}
-													className="w-40"
-												/>
-											)}
-
 											{/* Show Edit button when there's an unused approved change request */}
 											{canRequestChanges &&
 												hasUnusedApprovedRequest(
@@ -604,10 +543,8 @@ export const OrdersTable = ({
 											<div className="border-t border-b border-gray-200 py-4">
 												<OrderItemsDetailView
 													items={order.items}
-													canEdit={
-														currentUser.role ===
-														"factory"
-													}
+													// Only allow factory users to edit order items detail view
+													canEdit={currentUser?.role === "factory"}
 													onItemUpdate={(
 														updatedItem
 													) =>
@@ -615,29 +552,6 @@ export const OrdersTable = ({
 															order.id,
 															updatedItem
 														)
-													}
-												/>
-											</div>
-										</td>
-									</tr>
-								)}
-								{expandedOrder === order.id && (
-									<tr>
-										<td
-											colSpan={9}
-											className="px-6 py-4 bg-gray-50"
-										>
-											<div className="border-t border-b border-gray-200 py-4">
-												<h4 className="text-sm font-medium text-gray-900 mb-2">
-													Status History
-												</h4>
-												<StatusHistory
-													history={
-														order.OrderStatusHistories ||
-														[]
-													}
-													currentStatus={
-														order.currentStatus
 													}
 												/>
 											</div>
@@ -683,8 +597,7 @@ OrdersTable.propTypes = {
 	orders: PropTypes.array.isRequired,
 	canEditOrders: PropTypes.bool.isRequired,
 	canRequestChanges: PropTypes.bool,
-	onStatusUpdate: PropTypes.func.isRequired,
+	refreshOrders: PropTypes.func.isRequired,
 	isFactoryUser: PropTypes.bool,
 	activeStatusFilter: PropTypes.string,
-	refreshOrders: PropTypes.func.isRequired,
 };

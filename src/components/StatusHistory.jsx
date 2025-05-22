@@ -11,12 +11,6 @@ export const StatusHistory = ({ history, currentStatus }) => {
 				<div
 					key={entry.id}
 					className="flex items-center space-x-3 py-1 border-l-2 pl-3"
-					style={{
-						borderColor:
-							entry.status === currentStatus
-								? "#4F46E5"
-								: "#E5E7EB",
-					}}
 				>
 					<span
 						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getStatusColor(
@@ -51,5 +45,4 @@ StatusHistory.propTypes = {
 			}).isRequired,
 		})
 	).isRequired,
-	currentStatus: PropTypes.string.isRequired,
 };

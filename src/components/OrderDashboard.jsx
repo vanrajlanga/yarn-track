@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useOrders } from "../context/OrderContext";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "./ui/Button";
@@ -20,8 +20,7 @@ export const OrderDashboard = () => {
 		orders,
 		loading,
 		error,
-		filters,
-		setFilters,
+		setFilters: contextSetFilters,
 		createOrder,
 		updateOrderStatus,
 		refreshOrders,
@@ -30,14 +29,10 @@ export const OrderDashboard = () => {
 		canRequestChanges,
 		salesUsers,
 		fetchSalesUsers,
+		filters: contextFilters,
 	} = useOrders();
 
 	const [showNewOrderForm, setShowNewOrderForm] = useState(false);
-
-	// Fetch data when component mounts or filters change
-	useEffect(() => {
-		refreshOrders();
-	}, [filters, refreshOrders]);
 
 	// Fetch sales users only once when component mounts
 	useEffect(() => {
@@ -50,17 +45,6 @@ export const OrderDashboard = () => {
 
 	// Check if current user has factory role
 	const isFactoryUser = currentUser?.role === "factory";
-
-	// Initial filter state based on user role
-	useEffect(() => {
-		if (isFactoryUser) {
-			// For factory users, start with an empty status filter
-			setFilters((prevFilters) => ({
-				...prevFilters,
-				status: "",
-			}));
-		}
-	}, [isFactoryUser]);
 
 	// Initial form state for new order
 	const initialFormState = {
@@ -273,32 +257,25 @@ export const OrderDashboard = () => {
 	};
 
 	const handleSearch = () => {
-		setFilters({ ...filters, searchTerm: searchInput });
-	};
-
-	// Function to handle order status updates
-	const handleStatusUpdate = (orderId, newStatus) => {
-		updateOrderStatus(orderId, newStatus);
+		setFilters({
+			searchTerm: searchInput,
+		});
 	};
 
 	const clearFilters = () => {
 		setFilters({
-			status: "all",
 			searchTerm: "",
-			salespersonId: "all",
-			startDate: "",
-			endDate: "",
 		});
 		setSearchInput("");
 	};
 
-	// Create a handler specifically for the status filter change
-	const handleStatusFilterChange = (updatedFilters) => {
-		setFilters(updatedFilters);
-	};
-
 	// Display all orders regardless of user role
 	const displayOrders = orders;
+
+	// Fetch orders when component mounts or filters change (using context filters)
+	useEffect(() => {
+		refreshOrders();
+	}, [contextFilters, refreshOrders]);
 
 	if (loading) {
 		return <div className="p-4">Loading orders...</div>;
@@ -356,8 +333,8 @@ export const OrderDashboard = () => {
 
 				{isFilterOpen && (
 					<OrderFilters
-						filters={filters}
-						onFilterChange={handleStatusFilterChange}
+						filters={contextFilters}
+						onFilterChange={contextSetFilters}
 						showSalespersonFilter={["admin", "operator"].includes(
 							currentUser?.role
 						)}
@@ -376,12 +353,8 @@ export const OrderDashboard = () => {
 					orders={displayOrders}
 					canEditOrders={canEditOrders}
 					canRequestChanges={canRequestChanges}
-					onStatusUpdate={handleStatusUpdate}
 					refreshOrders={refreshOrders}
 					isFactoryUser={isFactoryUser}
-					activeStatusFilter={
-						filters.status !== "all" ? filters.status : null
-					}
 				/>
 			</div>
 
