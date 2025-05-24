@@ -543,8 +543,6 @@ export const OrdersTable = ({
 										{/* Original OrderItemsView with dynamic tooltip - icon and basic view */}
 										<div
 											className="relative inline-block group"
-											onMouseEnter={(event) => showTooltip(order, event)}
-											onMouseLeave={hideTooltip}
 										>
 											<OrderItemsView items={order.items} />
 
@@ -555,6 +553,8 @@ export const OrdersTable = ({
 												fill="none"
 												viewBox="0 0 24 24"
 												stroke="currentColor"
+												onMouseEnter={(event) => showTooltip(order, event)}
+												onMouseLeave={hideTooltip}
 											>
 												<path
 													strokeLinecap="round"
