@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Package, User, Home } from "lucide-react";
+import { LogOut, Package, User, Home, Users } from "lucide-react";
 import { Button } from "./ui/Button";
 
 export const Layout = ({ children }) => {
@@ -56,6 +56,21 @@ export const Layout = ({ children }) => {
 							>
 								<Home className="h-5 w-5" />
 								<span>Dashboard</span>
+							</Link>
+						)}
+
+						{/* Only show User Management for admin users */}
+						{currentUser.role === "admin" && (
+							<Link
+								to="/users"
+								className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+									isActive("/users")
+										? "bg-indigo-700"
+										: "hover:bg-indigo-700/50 transition-colors"
+								}`}
+							>
+								<Users className="h-5 w-5" />
+								<span>User Management</span>
 							</Link>
 						)}
 

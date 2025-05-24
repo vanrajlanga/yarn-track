@@ -15,6 +15,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Layout } from "./components/Layout";
 import { OrderDashboard } from "./components/OrderDashboard";
 import ChangeRequestsPage from "./pages/ChangeRequestsPage";
+import UserManagementPage from "./pages/UserManagementPage";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -85,6 +86,16 @@ const App = () => {
 							element={
 								<AdminRoute>
 									<Dashboard />
+								</AdminRoute>
+							}
+						/>
+						<Route
+							path="/users"
+							element={
+								<AdminRoute>
+									<Layout>
+										<UserManagementPage />
+									</Layout>
 								</AdminRoute>
 							}
 						/>
