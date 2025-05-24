@@ -343,11 +343,6 @@ export const OrderDashboard = () => {
 					/>
 				)}
 
-				<div className="px-6 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-500">
-					Showing {displayOrders.length} order
-					{displayOrders.length !== 1 ? "s" : ""}
-				</div>
-
 				{/* Orders Table */}
 				<OrdersTable
 					orders={displayOrders}

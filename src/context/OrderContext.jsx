@@ -52,6 +52,9 @@ export const OrderProvider = ({ children }) => {
 		startDate: "",
 		endDate: "",
 	});
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage, setItemsPerPage] = useState(10);
+	const [totalOrders, setTotalOrders] = useState(0);
 
 	// Memoize permission checks
 	const canEditOrders = useMemo(
@@ -85,8 +88,10 @@ export const OrderProvider = ({ children }) => {
 			params.append("salespersonId", filters.salespersonId);
 		if (filters.startDate) params.append("startDate", filters.startDate);
 		if (filters.endDate) params.append("endDate", filters.endDate);
+		params.append("page", currentPage);
+		params.append("limit", itemsPerPage);
 		return params.toString();
-	}, [filters]);
+	}, [filters, currentPage, itemsPerPage]);
 
 	// Memoize fetch function
 	const fetchOrders = useCallback(async () => {
@@ -118,7 +123,8 @@ export const OrderProvider = ({ children }) => {
 			}
 
 			const data = await response.json();
-			setAllOrders(data);
+			setAllOrders(data.orders);
+			setTotalOrders(data.totalCount);
 		} catch (err) {
 			setError(
 				err instanceof Error ? err.message : "Failed to fetch orders"
@@ -237,8 +243,12 @@ export const OrderProvider = ({ children }) => {
 			canAddOrders,
 			canRequestChanges,
 			fetchSalesUsers,
+			currentPage,
+			setCurrentPage,
+			itemsPerPage,
+			totalOrders,
 		}),
-		[allOrders, filteredOrders, salesUsers, loading, error, filters, setFilters, createOrder, refreshOrders, canEditOrders, canAddOrders, canRequestChanges, fetchSalesUsers]
+		[allOrders, filteredOrders, salesUsers, loading, error, filters, setFilters, createOrder, refreshOrders, canEditOrders, canAddOrders, canRequestChanges, fetchSalesUsers, currentPage, setCurrentPage, itemsPerPage, totalOrders]
 	);
 
 	return (

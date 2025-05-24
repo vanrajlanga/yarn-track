@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { format } from "date-fns";
 import { ORDER_STATUS_LABELS } from "../types";
@@ -42,8 +42,65 @@ export const OrdersTable = ({
 	});
 	const { currentUser } = useAuth();
 
-	// Get canChangeStatus from context
-	const { canChangeStatus } = useOrders();
+	// Get canChangeStatus, currentPage, setCurrentPage, itemsPerPage, totalOrders from context
+	const { canChangeStatus, currentPage, setCurrentPage, itemsPerPage, totalOrders } = useOrders();
+
+	// State to manage the visibility and position of the tooltip
+	const [activeTooltip, setActiveTooltip] = useState(null);
+
+	const tooltipHideTimeout = useRef(null);
+
+	const showTooltip = (order, event) => {
+		const iconRect = event.currentTarget.getBoundingClientRect();
+		const spaceAbove = iconRect.top;
+		const spaceBelow = window.innerHeight - iconRect.bottom;
+		const direction = spaceBelow > spaceAbove ? 'bottom' : 'top';
+
+		// Calculate tooltip position
+		const tooltipWidth = 400; // Approximate tooltip width (from w-[400px])
+
+		let top = 0;
+		let left = iconRect.left + iconRect.width / 2 - tooltipWidth / 2;
+
+		// Adjust top based on direction
+		if (direction === 'top') {
+			// Position above the icon. Need actual tooltip height for accurate positioning.
+			// For now, using a placeholder height (approx 150px based on content).
+			top = iconRect.top - 150 - 5; // 150 is a placeholder, 5 for gap
+		} else {
+			// Position below the icon
+			top = iconRect.bottom + 5; // 5 for gap
+		}
+
+		// Ensure tooltip is not off-screen horizontally
+		if (left < 0) {
+			left = 0;
+		} else if (left + tooltipWidth > window.innerWidth) {
+			left = window.innerWidth - tooltipWidth;
+		}
+
+		setActiveTooltip({
+			order,
+			top,
+			left,
+			direction,
+		});
+	};
+
+	const hideTooltip = () => {
+		// Set a timeout to hide the tooltip
+		tooltipHideTimeout.current = setTimeout(() => {
+			setActiveTooltip(null);
+		}, 100);
+	};
+
+	const cancelHideTooltip = () => {
+		// Clear the timeout if the cursor enters the tooltip
+		if (tooltipHideTimeout.current) {
+			clearTimeout(tooltipHideTimeout.current);
+			tooltipHideTimeout.current = null;
+		}
+	};
 
 	// Memoize orders.length to prevent unnecessary re-renders
 	const ordersCount = useMemo(() => orders.length, [orders]);
@@ -381,6 +438,20 @@ export const OrdersTable = ({
 		refreshOrders();
 	};
 
+	const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+	const handlePreviousPage = () => {
+		if (currentPage > 1) {
+			setCurrentPage(currentPage - 1);
+		}
+	};
+
+	const handleNextPage = () => {
+		if (currentPage < totalPages) {
+			setCurrentPage(currentPage + 1);
+		}
+	};
+
 	return (
 		<>
 			<div className="overflow-x-auto">
@@ -390,7 +461,7 @@ export const OrdersTable = ({
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
 								<span className="sr-only">Expand</span>
 							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative z-10">
 								SDY Number
 							</th>
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -402,7 +473,7 @@ export const OrdersTable = ({
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 								Delivery Party
 							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative z-10">
 								Deniers & SLs
 							</th>
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -417,7 +488,7 @@ export const OrdersTable = ({
 						</tr>
 					</thead>
 					<tbody className="bg-white divide-y divide-gray-200">
-						{orders.map((order) => (
+						{orders.map((order, index) => (
 							<React.Fragment key={order.id}>
 								<tr>
 									<td className="px-6 py-4 w-10">
@@ -469,7 +540,30 @@ export const OrdersTable = ({
 										{order.deliveryParty}
 									</td>
 									<td className="px-6 py-4">
-										<OrderItemsView items={order.items} />
+										{/* Original OrderItemsView with dynamic tooltip - icon and basic view */}
+										<div
+											className="relative inline-block group"
+											onMouseEnter={(event) => showTooltip(order, event)}
+											onMouseLeave={hideTooltip}
+										>
+											<OrderItemsView items={order.items} />
+
+											{/* Info icon */}
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												className="h-4 w-4 text-gray-400 cursor-help inline-block ml-1 align-middle"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+												/>
+											</svg>
+										</div>
 									</td>
 									<td className="px-6 py-4 whitespace-nowrap">
 										{order.salesperson?.username}
@@ -563,6 +657,24 @@ export const OrdersTable = ({
 				</table>
 			</div>
 
+			{/* Pagination Controls */}
+			<div className="flex justify-between items-center mt-4 px-6 py-3">
+				<span>
+					Showing {orders.length} of {totalOrders} orders
+				</span>
+				<div className="flex space-x-4 items-center">
+					<Button onClick={handlePreviousPage} disabled={currentPage === 1}>
+						Previous
+					</Button>
+					<span>
+						Page {currentPage} of {totalPages}
+					</span>
+					<Button onClick={handleNextPage} disabled={currentPage === totalPages}>
+						Next
+					</Button>
+				</div>
+			</div>
+
 			{/* Change Request Modal */}
 			{changeRequestOrder && (
 				<ChangeRequestModal
@@ -587,6 +699,21 @@ export const OrdersTable = ({
 					submitButtonText="Save Changes"
 					isOneTimeEdit={true}
 				/>
+			)}
+
+			{/* Global Tooltip positioned relative to the viewport */}
+			{activeTooltip && (
+				<span
+					className={`fixed w-[400px] p-2 bg-white border border-gray-300 text-xs rounded-md transition-opacity duration-200 z-[10000] shadow-lg ${activeTooltip.direction === 'top' ? '' : ''}`}
+					style={{
+						top: activeTooltip.top,
+						left: activeTooltip.left,
+					}}
+					onMouseEnter={cancelHideTooltip}
+					onMouseLeave={hideTooltip}
+				>
+					<OrderItemsDetailView items={activeTooltip.order.items} canEdit={false} onItemUpdate={() => {}} />
+				</span>
 			)}
 		</>
 	);

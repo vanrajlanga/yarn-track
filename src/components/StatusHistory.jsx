@@ -10,16 +10,16 @@ export const StatusHistory = ({ history, currentStatus }) => {
 			{history.map((entry, index) => (
 				<div
 					key={entry.id}
-					className="flex items-center space-x-3 py-1 border-l-2 pl-3"
+					className="flex items-center py-1 border-l-2 pl-3"
 				>
 					<span
-						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getStatusColor(
+						className={`inline-block px-2.5 py-0.5 rounded-full text-sm font-medium flex-none mr-3 ${getStatusColor(
 							entry.status
 						)}`}
 					>
 						{ORDER_STATUS_LABELS[entry.status]}
 					</span>
-					<span className="text-xs text-gray-500">
+					<span className="text-xs text-gray-500 mr-3">
 						{format(
 							new Date(entry.created_at),
 							"MMM d, yyyy h:mm a"
