@@ -20,7 +20,8 @@ export const Button = ({
 		secondary:
 			"bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500",
 		outline:
-			"bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-indigo-500",
+			"border hover:bg-gray-50 focus:ring-indigo-500",
+		ghost: "hover:bg-gray-100 focus:ring-gray-500",
 		danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
 	};
 
@@ -28,11 +29,14 @@ export const Button = ({
 		sm: "text-sm px-3 py-1.5",
 		md: "text-base px-4 py-2",
 		lg: "text-lg px-6 py-3",
+		icon: "p-2",
 	};
 
 	const disabledClasses = disabled
 		? "opacity-50 cursor-not-allowed"
 		: "cursor-pointer";
+
+	const iconClasses = size === 'icon' && icon && !children ? '' : 'mr-2';
 
 	return (
 		<button
@@ -41,16 +45,16 @@ export const Button = ({
 			onClick={onClick}
 			disabled={disabled}
 		>
-			{icon && <span className="mr-2">{icon}</span>}
+			{icon && <span className={iconClasses}>{icon}</span>}
 			{children}
 		</button>
 	);
 };
 
 Button.propTypes = {
-	children: PropTypes.node.isRequired,
-	variant: PropTypes.oneOf(["primary", "secondary", "outline", "danger"]),
-	size: PropTypes.oneOf(["sm", "md", "lg"]),
+	children: PropTypes.node,
+	variant: PropTypes.oneOf(["primary", "secondary", "outline", "ghost", "danger"]),
+	size: PropTypes.oneOf(["sm", "md", "lg", "icon"]),
 	onClick: PropTypes.func,
 	type: PropTypes.oneOf(["button", "submit", "reset"]),
 	disabled: PropTypes.bool,
