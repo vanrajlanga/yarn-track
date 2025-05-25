@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { ORDER_STATUS_LABELS } from "../types";
 import { OrderFilters } from "./OrderFilters";
+import { toast } from 'react-hot-toast';
 
 const COLORS = [
 	"#0088FE",
@@ -134,6 +135,65 @@ export const AnalyticsDashboard = () => {
 		};
 	}, [allOrders, analyticsFilters]);
 
+	// Define the handler for exporting orders (copied from OrderDashboard.jsx)
+	const handleExportAnalytics = async (filters) => {
+		try {
+			console.log("Exporting analytics data with filters:", filters);
+			const token = localStorage.getItem("token");
+			if (!token) {
+				toast.error("Not authenticated");
+				return;
+			}
+
+			// Construct the API URL with filter parameters
+			const queryParams = new URLSearchParams();
+			if (filters.status && filters.status !== 'all') {
+				queryParams.append('status', filters.status);
+			}
+			if (filters.startDate) {
+				queryParams.append('startDate', filters.startDate);
+			}
+			if (filters.endDate) {
+				queryParams.append('endDate', filters.endDate);
+			}
+			// Add other filters if needed (e.g., salespersonId, searchTerm)
+			// Note: Salesperson filter might be applied on the backend based on user role
+			// Search term might also need to be included if backend supports it
+
+			// Use the same export endpoint as for orders
+			const apiUrl = `${import.meta.env.VITE_API_URL}/orders/export?${queryParams.toString()}`;
+
+			const response = await fetch(apiUrl, {
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `Failed to export data: ${response.statusText}`);
+			}
+
+			// Handle the file download
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `analytics_export_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			window.URL.revokeObjectURL(url);
+
+			toast.success("Analytics data exported successfully.");
+
+		} catch (error) {
+			console.error("Error exporting analytics data:", error);
+			toast.error(error.message || "Error exporting analytics data. Please try again.");
+		}
+	};
+
 	if (isLoading || !analyticsData) {
 		return (
 			<div className="flex items-center justify-center h-64">
@@ -165,6 +225,7 @@ export const AnalyticsDashboard = () => {
 					showSalespersonFilter={true} // Assuming admin can always filter by salesperson in analytics
 					salesUsers={salesUsers}
 					isFactoryUser={false} // Analytics dashboard is for Admin, not Factory
+					onExport={() => handleExportAnalytics(analyticsFilters)} // Pass the export function
 				/>
 			</div>
 

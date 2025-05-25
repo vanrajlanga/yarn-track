@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { ORDER_STATUS_LABELS } from "../types";
+import { Button } from "./ui/Button";
 
 /**
  * A reusable component for order filtering controls
@@ -13,6 +14,7 @@ import { ORDER_STATUS_LABELS } from "../types";
  * @param {boolean} props.showSalespersonFilter - Whether to show salesperson filter
  * @param {Array} props.salesUsers - List of sales users for filter dropdown
  * @param {boolean} props.isFactoryUser - Whether the user is a factory user
+ * @param {Function} props.onExport - Handler to trigger the export functionality
  * @returns {React.ReactElement}
  */
 export const OrderFilters = ({
@@ -21,7 +23,10 @@ export const OrderFilters = ({
 	showSalespersonFilter = false,
 	salesUsers = [],
 	isFactoryUser = false,
+	onExport,
 }) => {
+	console.log("Type of onExport in OrderFilters:", typeof onExport);
+
 	const handleFilterChange = (field, value) => {
 		onFilterChange({ ...filters, [field]: value });
 	};
@@ -102,15 +107,10 @@ export const OrderFilters = ({
 					</div>
 				)}
 
-				{/* Order Date Filter */}
-				<div>
-					<label
-						htmlFor="dateFilter"
-						className="block text-sm font-medium text-gray-700 mb-1"
-					>
-						Order Date
-					</label>
-					<div className="flex items-center space-x-2">
+				{/* Order Date Filter and Export Button */}
+				<div className="md:col-span-2 flex items-end space-x-4">
+					{/* Order Date Filter */}
+					<div className="flex items-center space-x-2 flex-grow">
 						<Input
 							type="date"
 							value={filters.startDate}
@@ -126,6 +126,13 @@ export const OrderFilters = ({
 								handleFilterChange("endDate", e.target.value)
 							}
 						/>
+					</div>
+
+					{/* Export Button */}
+					<div>
+						<Button size="sm" onClick={() => onExport(filters)}>
+							Export
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -144,4 +151,5 @@ OrderFilters.propTypes = {
 	showSalespersonFilter: PropTypes.bool,
 	salesUsers: PropTypes.array,
 	isFactoryUser: PropTypes.bool,
+	onExport: PropTypes.func.isRequired,
 };

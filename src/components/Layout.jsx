@@ -39,7 +39,7 @@ export const Layout = ({ children }) => {
 					<div className="flex items-center h-16 px-4">
 						<Package className="h-8 w-8 flex-shrink-0" />
 						{!isSidebarCollapsed && (
-							<h1 className="text-xl font-bold ml-3">Yarn Track</h1>
+							<h1 className="text-xl font-bold ml-3">Salasar Track</h1>
 						)}
 					</div>
 

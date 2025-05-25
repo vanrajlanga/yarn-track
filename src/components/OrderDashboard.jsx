@@ -13,6 +13,7 @@ import { OrderFilters } from "./OrderFilters";
 import { OrdersTable } from "./OrdersTable";
 import { SearchBar } from "./ui/SearchBar";
 import { OrderModal } from "./OrderModal";
+import { toast } from "react-hot-toast";
 
 export const OrderDashboard = () => {
 	const { currentUser } = useAuth();
@@ -269,6 +270,64 @@ export const OrderDashboard = () => {
 		setSearchInput("");
 	};
 
+	// Define the handler for exporting orders
+	const handleExportOrders = async (filters) => {
+		try {
+			console.log("Exporting orders with filters:", filters);
+			const token = localStorage.getItem("token");
+			if (!token) {
+				toast.error("Not authenticated");
+				return;
+			}
+
+			// Construct the API URL with filter parameters
+			const queryParams = new URLSearchParams();
+			if (filters.status && filters.status !== 'all') {
+				queryParams.append('status', filters.status);
+			}
+			if (filters.startDate) {
+				queryParams.append('startDate', filters.startDate);
+			}
+			if (filters.endDate) {
+				queryParams.append('endDate', filters.endDate);
+			}
+			// Add other filters if needed (e.g., salespersonId, searchTerm)
+			// Note: Salesperson filter might be applied on the backend based on user role
+			// Search term might also need to be included if backend supports it
+
+			const apiUrl = `${import.meta.env.VITE_API_URL}/orders/export?${queryParams.toString()}`;
+
+			const response = await fetch(apiUrl, {
+				method: "GET",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `Failed to export orders: ${response.statusText}`);
+			}
+
+			// Handle the file download
+			const blob = await response.blob();
+			const url = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `orders_export_${format(new Date(), "yyyyMMdd_HHmmss")}.xlsx`;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			window.URL.revokeObjectURL(url);
+
+			toast.success("Orders exported successfully.");
+
+		} catch (error) {
+			console.error("Error exporting orders:", error);
+			toast.error(error.message || "Error exporting orders. Please try again.");
+		}
+	};
+
 	// Display all orders regardless of user role
 	const displayOrders = orders;
 
@@ -340,6 +399,7 @@ export const OrderDashboard = () => {
 						)}
 						salesUsers={salesUsers}
 						isFactoryUser={isFactoryUser}
+						onExport={handleExportOrders}
 					/>
 				)}
 
