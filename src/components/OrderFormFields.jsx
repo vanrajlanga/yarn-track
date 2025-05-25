@@ -28,27 +28,29 @@ export const OrderFormFields = ({
 					</div>
 				</div>
 			)}
-			<div>
-				<label
-					htmlFor="sdyNumber"
-					className="block text-sm font-medium text-gray-700 mb-1"
-				>
-					SDY Number *
-				</label>
-				<Input
-					id="sdyNumber"
-					name="sdyNumber"
-					value={formData.sdyNumber || "SDY -"}
-					onChange={handleChange}
-					error={errors.sdyNumber}
-					disabled={isEditMode && !['operator', 'factory'].includes(currentUser?.role)}
-					className={
-						isEditMode && !['operator', 'factory'].includes(currentUser?.role)
-							? "bg-gray-100 cursor-not-allowed"
-							: ""
-					}
-				/>
-			</div>
+			{isEditMode && (
+				<div>
+					<label
+						htmlFor="sdyNumber"
+						className="block text-sm font-medium text-gray-700 mb-1"
+					>
+						SDY Number *
+					</label>
+					<Input
+						id="sdyNumber"
+						name="sdyNumber"
+						value={formData.sdyNumber || "SDY -"}
+						onChange={handleChange}
+						error={errors.sdyNumber}
+						disabled={isEditMode && !['operator', 'factory'].includes(currentUser?.role)}
+						className={
+							isEditMode && !['operator', 'factory'].includes(currentUser?.role)
+								? "bg-gray-100 cursor-not-allowed"
+								: ""
+						}
+					/>
+				</div>
+			)}
 
 			<div>
 				<label
@@ -101,27 +103,29 @@ export const OrderFormFields = ({
 				/>
 			</div>
 
-			<div>
-				<label
-					htmlFor="deliveryParty"
-					className="block text-sm font-medium text-gray-700 mb-1"
-				>
-					Delivery Party
-				</label>
-				<Input
-					id="deliveryParty"
-					name="deliveryParty"
-					value={formData.deliveryParty}
-					onChange={handleChange}
-					error={errors.deliveryParty}
-					disabled={isEditMode && !['operator', 'factory'].includes(currentUser?.role)}
-					className={
-						isEditMode && !['operator', 'factory'].includes(currentUser?.role)
-							? "bg-gray-100 cursor-not-allowed"
-							: ""
-					}
-				/>
-			</div>
+			{isEditMode && (
+				<div>
+					<label
+						htmlFor="deliveryParty"
+						className="block text-sm font-medium text-gray-700 mb-1"
+					>
+						Delivery Party
+					</label>
+					<Input
+						id="deliveryParty"
+						name="deliveryParty"
+						value={formData.deliveryParty}
+						onChange={handleChange}
+						error={errors.deliveryParty}
+						disabled={isEditMode && !['operator', 'factory'].includes(currentUser?.role)}
+						className={
+							isEditMode && !['operator', 'factory'].includes(currentUser?.role)
+								? "bg-gray-100 cursor-not-allowed"
+								: ""
+						}
+					/>
+				</div>
+			)}
 			<div>
 				<label
 					htmlFor="salespersonId"

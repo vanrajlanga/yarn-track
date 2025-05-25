@@ -24,10 +24,15 @@ export const validateOrderForm = (data) => {
 	const errors = {};
 
 	const requiredFields = [
-		{ key: "sdyNumber", label: "SDY Number" },
 		{ key: "partyName", label: "Party Name" },
-		// Delivery Party is no longer required
 	];
+
+	console.log("data", data);
+	// Validate SDY Number only if the order has an ID (i.e., is being edited)
+	if (data.id !== undefined) {
+		const sdyNumberError = validateRequired(data.sdyNumber, "SDY Number");
+		if (sdyNumberError) errors.sdyNumber = sdyNumberError;
+	}
 
 	requiredFields.forEach(({ key, label }) => {
 		const error = validateRequired(data[key], label);
@@ -51,7 +56,7 @@ export const validateOrderForm = (data) => {
 	if ("salespersonId" in data && !data.salespersonId) {
 		errors.salespersonId = "Salesperson is required";
 	}
-
+	console.log("errors", errors);	
 	return errors;
 };
 

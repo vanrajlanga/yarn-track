@@ -188,6 +188,7 @@ export const OrderProvider = ({ children }) => {
 	 * @returns {Promise<Order|null>}
 	 */
 	const createOrder = async (orderData) => {
+		console.log("Creating order:", orderData);
 		// Add permission check
 		if (!canAddOrders) {
 			setError("Not authorized to add orders");

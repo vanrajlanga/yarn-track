@@ -13,6 +13,7 @@ import { ChangeRequestModal } from "./ChangeRequestModal";
 import { OrderModal } from "./OrderModal";
 import { toast } from "react-toastify";
 import { useOrders } from "../context/OrderContext";
+import { validateRequired } from "../utils/validationUtils";
 
 /**
  * A component for displaying orders in a table format
@@ -32,6 +33,7 @@ export const OrdersTable = ({
 	const [editingRequestId, setEditingRequestId] = useState(null);
 	const [editOrder, setEditOrder] = useState(null);
 	const [itemsView, setItemsView] = useState(null);
+	const [isFactoryOneTimeEditing, setIsFactoryOneTimeEditing] = useState(false);
 	const [orderFormData, setOrderFormData] = useState({
 		sdyNumber: "",
 		date: "",
@@ -229,7 +231,43 @@ export const OrdersTable = ({
 
 	// Handle edit button click
 	const handleEdit = (order) => {
-		// Get the first unused approved request
+		console.log("Attempting to edit order:", order);
+		console.log("Current user role:", currentUser?.role);
+		console.log("Order factoryOneTimeEditUsed:", order.factoryOneTimeEditUsed);
+
+		// For factory users, check the one-time edit status
+		if (currentUser?.role === 'factory') {
+			if (order.factoryOneTimeEditUsed) {
+				// If one-time edit is already used, show message and prevent edit
+				toast.info("Factory role has used their one-time edit for this order. Please request a change.");
+				return;
+			} else {
+				// If one-time edit is not used, allow editing deliveryParty and sdyNumber
+				// Prepare order data for editing (only include editable fields for factory)
+				const formattedOrder = {
+					...order,
+					// Factory can only edit deliveryParty and sdyNumber
+					deliveryParty: order.deliveryParty || "",
+					sdyNumber: order.sdyNumber || "SDY -",
+					// Ensure other fields are present but disabled in the form via OrderFormFields logic
+					date: order.date,
+					partyName: order.partyName,
+					salespersonId: order.salespersonId,
+					orderItems: order.items.map((item) => ({ // Include items for display
+						denier: item.denier || "",
+						slNumber: item.slNumber || "",
+						quantity: item.quantity || "",
+					})),
+				};
+				setIsFactoryOneTimeEditing(true); // Set state to indicate one-time factory edit
+				setOrderFormData(formattedOrder);
+				setEditOrder(order); // Use the original order for context
+				setEditingRequestId(null); // No change request ID for one-time edit
+				return;
+			}
+		}
+
+		// For Operator and other roles, check for unused approved change requests
 		const unusedRequest = getFirstUnusedApprovedRequest(order.id);
 
 		if (!unusedRequest) {
@@ -258,6 +296,7 @@ export const OrdersTable = ({
 		setEditingRequestId(unusedRequest.id);
 		setOrderFormData(formattedOrder);
 		setEditOrder(order);
+		setIsFactoryOneTimeEditing(false); // Ensure this is false for non-factory edits
 	};
 
 	// Handle form changes in edit mode
@@ -313,51 +352,103 @@ export const OrdersTable = ({
 	const handleEditSubmit = async (e) => {
 		e.preventDefault();
 
+		// We use the validateForm from useFormWithValidation, which updates the errors state
+		// We only proceed with submission if there are no validation errors
+		// The errors object is managed by useFormWithValidation hook in OrderDashboard.
+		// In OrdersTable edit modal, we pass empty errors object, so we need to manually validate here if needed.
+
+		// For factory one-time edit, manually validate only the editable fields (deliveryParty, sdyNumber)
+		if (isFactoryOneTimeEditing) {
+			const factoryEditErrors = {};
+			const sdyNumberError = validateRequired(orderFormData.sdyNumber, "SDY Number");
+			if (sdyNumberError) factoryEditErrors.sdyNumber = sdyNumberError;
+			const deliveryPartyError = validateRequired(orderFormData.deliveryParty, "Delivery Party");
+			if (deliveryPartyError) factoryEditErrors.deliveryParty = deliveryPartyError;
+
+			// If there are validation errors, update local errors state (or handle differently)
+			// For simplicity, let's just show a toast for now if validation fails.
+			if (Object.keys(factoryEditErrors).length > 0) {
+				// In a real app, you might want to display these errors next to the fields
+				console.error("Factory one-time edit validation errors:", factoryEditErrors);
+				toast.error("Please fill in required fields for one-time edit."); // Generic error
+				return;
+			}
+
+			// Prepare update data for factory one-time edit
+			const updateData = {
+				deliveryParty: orderFormData.deliveryParty,
+				sdyNumber: orderFormData.sdyNumber,
+				factoryOneTimeEditUsed: true, // Mark one-time edit as used
+			};
+
+			try {
+				const token = localStorage.getItem("token");
+				if (!token) {
+					toast.error("Not authenticated");
+					return;
+				}
+
+				const response = await fetch(
+					`${import.meta.env.VITE_API_URL}/orders/${editOrder.id}`,
+					{
+						method: "PATCH",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify(updateData),
+					}
+				);
+
+				if (!response.ok) {
+					const errorData = await response.json();
+					throw new Error(errorData.error || `Failed to update order: ${response.statusText}`);
+				}
+
+				const updatedOrder = await response.json();
+				console.log("Factory one-time edit successful:", updatedOrder);
+
+				// Refresh the orders list and close the modal
+				await refreshOrders();
+				handleCloseModal();
+				toast.success("Order updated successfully");
+
+			} catch (error) {
+				console.error("Error submitting factory one-time edit:", error);
+				toast.error(error.message || "Error updating order.");
+			}
+			return; // Exit the function after handling factory edit
+		}
+
+		// Existing logic for Operator/Approved Change Request edits
+		// This part assumes validation is handled by useFormWithValidation or not needed here.
+
+		// Ensure we have an editingRequestId for approved change requests
+		if (!editingRequestId) {
+			console.error("Editing without a valid change request ID.");
+			toast.error("Invalid edit operation.");
+			return;
+		}
+
+		// Prepare update data for approved change request
+		// This assumes orderFormData contains the complete updated order data
+		const updateData = {
+			...orderFormData,
+			// Do not include orderItems here as they are updated via a separate endpoint
+			orderItems: undefined,
+			// We need to send the editingRequestId to the backend to mark the request as used
+			editingRequestId: editingRequestId,
+		};
+
 		try {
 			const token = localStorage.getItem("token");
-			if (!token || !editingRequestId) {
-				toast.error("Authentication required");
+			if (!token) {
+				toast.error("Not authenticated");
 				return;
 			}
 
-			// First, mark the change request as used
-			const markUsedResponse = await fetch(
-				`${import.meta.env.VITE_API_URL}/change-requests/${editingRequestId}/mark-used`,
-				{
-					method: "PATCH",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-				}
-			);
-
-			if (!markUsedResponse.ok) {
-				console.error(
-					"Failed to mark change request as used:",
-					markUsedResponse.status
-				);
-				toast.error(
-					"Failed to mark change request as used. Please try again."
-				);
-				return;
-			}
-
-			// Create submitted data based on user role
-			let submittedData;
-			if (currentUser.role === "factory") {
-				// For factory users, only send deliveryParty field
-				submittedData = {
-					deliveryParty: orderFormData.deliveryParty,
-				};
-			} else {
-				// For other users, send all fields except date
-				const { date, ...otherData } = orderFormData;
-				submittedData = otherData;
-			}
-
-			// Send the update to the server
-			const updateResponse = await fetch(
+			// Send PATCH request to update the order
+			const response = await fetch(
 				`${import.meta.env.VITE_API_URL}/orders/${editOrder.id}`,
 				{
 					method: "PATCH",
@@ -365,53 +456,44 @@ export const OrdersTable = ({
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${token}`,
 					},
-					body: JSON.stringify(submittedData),
+					body: JSON.stringify(updateData),
 				}
 			);
 
-			if (!updateResponse.ok) {
-				const errorData = await updateResponse.json();
-				toast.error(
-					errorData.error ||
-						"Failed to update order. Please try again."
-				);
-				return;
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `Failed to update order: ${response.statusText}`);
 			}
 
-			const updatedOrder = await updateResponse.json();
-			console.log("Order updated successfully:", updatedOrder);
+			// const updatedOrder = await response.json(); // Not strictly needed here if refreshing
+			console.log("Order update successful (via approved request).");
 
-			try {
-				// Update local state to mark the request as used
-				setApprovedRequests((prev) => {
-					const orderId = editOrder.id;
-					const newRequests = { ...prev };
+			// Update local state to mark the request as used
+			setApprovedRequests((prev) => {
+				const orderId = editOrder.id;
+				const newRequests = { ...prev };
 
-					if (newRequests[orderId]) {
-						newRequests[orderId] = newRequests[orderId].map(
-							(request) =>
-								request.id === editingRequestId
-									? { ...request, isEditUsed: true }
-									: request
-						);
-					}
+				if (newRequests[orderId]) {
+					newRequests[orderId] = newRequests[orderId].map(
+						(request) =>
+							request.id === editingRequestId
+								? { ...request, isEditUsed: true }
+								: request
+					);
+				}
 
-					return newRequests;
-				});
+				return newRequests;
+			});
 
-				// Refresh the orders list
-				await refreshOrders();
+			// Refresh the orders list
+			await refreshOrders();
 
-				// Close the modal and show success message after everything is successful
-				handleCloseModal();
-				toast.success("Order updated successfully");
-			} catch (err) {
-				console.error("Error during update:", err);
-				toast.error("Error updating order list. Please try again.");
-			}
+			// Close the modal and show success message after everything is successful
+			handleCloseModal();
+			toast.success("Order updated successfully");
 		} catch (error) {
-			console.error("Error submitting order edit:", error);
-			toast.error("Error submitting order edit. Please try again.");
+			console.error("Error during update:", error);
+			toast.error("Error updating order list. Please try again.");
 		}
 	};
 
@@ -571,59 +653,45 @@ export const OrdersTable = ({
 									{/* Actions column remains if either edit or change request is allowed */}
 									{(canEditOrders || canRequestChanges) && (
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-											{/* Show Edit button when there's an unused approved change request */}
-											{canRequestChanges &&
-												hasUnusedApprovedRequest(
-													order.id
-												) && (
-													<Button
-														size="sm"
-														variant="primary"
-														className="ml-2"
-														onClick={() =>
-															handleEdit(order)
-														}
-														title="Edit order (one-time use after approval)"
-													>
-														Edit Order
-													</Button>
-												)}
+											{/* Determine if the order is editable by the current user */}
+											{(() => {
+												const isFactoryOneTimeAvailable = currentUser?.role === 'factory' && !order.factoryOneTimeEditUsed;
+												const hasApprovedRequest = canRequestChanges && hasUnusedApprovedRequest(order.id);
 
-											{/* Show Request Change button when no pending request and no unused approved requests */}
-											{canRequestChanges &&
-												!hasUnusedApprovedRequest(
-													order.id
-												) &&
-												!hasPendingRequest(
-													order.id
-												) && (
-													<Button
-														size="sm"
-														variant="outline"
-														className="ml-2"
-														onClick={() =>
-															handleRequestChange(
-																order
-															)
-														}
-														disabled={hasPendingRequest(
-															order.id
-														)}
-														title={
-															hasPendingRequest(
-																order.id
-															)
-																? "Change request already pending"
-																: "Request change"
-														}
-													>
-														{hasPendingRequest(
-															order.id
-														)
-															? "Request Pending"
-															: "Request Change"}
-													</Button>
-												)}
+												if (isFactoryOneTimeAvailable || hasApprovedRequest) {
+													return (
+														<Button
+															size="sm"
+															variant="primary"
+															className="ml-2"
+															onClick={() => handleEdit(order)}
+															title={isFactoryOneTimeAvailable ? "Edit order (one-time factory edit)" : "Edit order (one-time use after approval)"}
+														>
+															Edit Order
+														</Button>
+													);
+												} else if (canRequestChanges && !hasPendingRequest(order.id)) {
+													// Show Request Change button if not editable but can request changes and no pending request
+													return (
+														<Button
+															size="sm"
+															variant="outline"
+															className="ml-2"
+															onClick={() => handleRequestChange(order)}
+															disabled={hasPendingRequest(order.id)}
+															title={hasPendingRequest(order.id) ? "Change request already pending" : "Request change"}
+														>
+															{hasPendingRequest(order.id) ? "Request Pending" : "Request Change"}
+														</Button>
+													);
+												} else if (canRequestChanges && hasPendingRequest(order.id)) {
+													// Show Request Pending text if can request changes and has pending request
+													return (
+														<span className="ml-2 text-sm text-gray-500">Request Pending</span>
+													);
+												}
+												return null; // Render nothing if no action is available
+											})()}
 										</td>
 									)}
 								</tr>
@@ -697,7 +765,7 @@ export const OrdersTable = ({
 					handleAddOrderItem={handleAddOrderItem}
 					handleRemoveOrderItem={handleRemoveOrderItem}
 					submitButtonText="Save Changes"
-					isOneTimeEdit={true}
+					isOneTimeEdit={isFactoryOneTimeEditing}
 				/>
 			)}
 
