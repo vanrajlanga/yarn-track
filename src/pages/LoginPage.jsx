@@ -146,56 +146,6 @@ export const LoginPage = () => {
 								</span>
 							</div>
 						</div>
-
-						<div className="mt-6 grid grid-cols-2 gap-3">
-							<div className="text-sm bg-gray-50 p-3 rounded border border-gray-200">
-								<div className="font-medium text-gray-700">
-									Sales
-								</div>
-								<div className="text-gray-500">
-									Username: johndoe
-								</div>
-								<div className="text-gray-500">
-									Password: password
-								</div>
-							</div>
-
-							<div className="text-sm bg-gray-50 p-3 rounded border border-gray-200">
-								<div className="font-medium text-gray-700">
-									Operator
-								</div>
-								<div className="text-gray-500">
-									Username: operator
-								</div>
-								<div className="text-gray-500">
-									Password: password
-								</div>
-							</div>
-
-							<div className="text-sm bg-gray-50 p-3 rounded border border-gray-200">
-								<div className="font-medium text-gray-700">
-									Factory
-								</div>
-								<div className="text-gray-500">
-									Username: factory
-								</div>
-								<div className="text-gray-500">
-									Password: password
-								</div>
-							</div>
-
-							<div className="text-sm bg-gray-50 p-3 rounded border border-gray-200">
-								<div className="font-medium text-gray-700">
-									Admin
-								</div>
-								<div className="text-gray-500">
-									Username: admin
-								</div>
-								<div className="text-gray-500">
-									Password: password
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 			</div>
