@@ -520,6 +520,47 @@ export const OrdersTable = ({
 		refreshOrders();
 	};
 
+	// Handle order deletion (Admin only)
+	const handleDeleteOrder = async (orderId) => {
+		const confirmed = window.confirm("Are you sure you want to delete this order?");
+
+		if (!confirmed) {
+			return;
+		}
+
+		try {
+			const token = localStorage.getItem("token");
+			if (!token) {
+				toast.error("Not authenticated");
+				return;
+			}
+
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/orders/${orderId}`,
+				{
+					method: "DELETE",
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || `Failed to delete order: ${response.statusText}`);
+			}
+
+			// Refresh the orders list
+			await refreshOrders();
+
+			toast.success("Order deleted successfully");
+
+		} catch (error) {
+			console.error("Error deleting order:", error);
+			toast.error(error.message || "Error deleting order.");
+		}
+	};
+
 	const totalPages = Math.ceil(totalOrders / itemsPerPage);
 
 	const handlePreviousPage = () => {
@@ -561,8 +602,8 @@ export const OrdersTable = ({
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 								Salesperson
 							</th>
-							{/* Actions column remains if either edit or change request is allowed */}
-							{(canEditOrders || canRequestChanges) && (
+							{/* Actions column remains if edit, change request or delete is allowed */}
+							{(canEditOrders || canRequestChanges || currentUser?.role === 'admin') && (
 								<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Actions
 								</th>
@@ -650,9 +691,9 @@ export const OrdersTable = ({
 									<td className="px-6 py-4 whitespace-nowrap">
 										{order.salesperson?.username}
 									</td>
-									{/* Actions column remains if either edit or change request is allowed */}
-									{(canEditOrders || canRequestChanges) && (
-										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+									{/* Actions column data */}
+									{(canEditOrders || canRequestChanges || currentUser?.role === 'admin') && (
+										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end">
 											{/* Determine if the order is editable by the current user */}
 											{(() => {
 												const isFactoryOneTimeAvailable = currentUser?.role === 'factory' && !order.factoryOneTimeEditUsed;
@@ -690,8 +731,21 @@ export const OrdersTable = ({
 														<span className="ml-2 text-sm text-gray-500">Request Pending</span>
 													);
 												}
-												return null; // Render nothing if no action is available
+
+												return null; // Render nothing if no action is available for edit/request
 											})()}
+											{/* Show Delete button for admin only, alongside other actions */}
+											{currentUser?.role === 'admin' && (
+												<Button
+													size="sm"
+													variant="danger"
+													className="ml-2"
+													onClick={() => handleDeleteOrder(order.id)}
+													title="Delete order"
+												>
+													Delete
+												</Button>
+											)}
 										</td>
 									)}
 								</tr>
