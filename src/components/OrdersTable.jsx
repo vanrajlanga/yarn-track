@@ -705,16 +705,16 @@ export const OrdersTable = ({
 												<OrderItemsDetailView
 													items={order.items}
 													// Only allow factory users to edit order items detail view
-													canEdit={currentUser?.role === "factory"}
-													onItemUpdate={(
-														updatedItem
-													) =>
-														handleOrderItemUpdate(
-															order.id,
-															updatedItem
-														)
-													}
+													// AND only if SDY Number and Delivery Party are filled
+													canEdit={currentUser?.role === "factory" && !!order.sdyNumber && !!order.deliveryParty}
+													onItemUpdate={(updatedItem) => handleOrderItemUpdate(order.id, updatedItem)}
 												/>
+												{/* Add a message if editing is disabled due to missing fields */}
+												{currentUser?.role === "factory" && (!order.sdyNumber || !order.deliveryParty) && (
+													<p className="mt-2 text-sm text-orange-600">
+														Please fill in SDY Number and Delivery Party in the Edit Order to enable item details editing.
+													</p>
+												)}
 											</div>
 										</td>
 									</tr>
