@@ -13,33 +13,41 @@ import { Search } from "lucide-react";
  * @returns {React.ReactElement}
  */
 export const SearchBar = ({
-	value,
-	onChange,
-	onSearch,
-	placeholder = "Search...",
+    value,
+    onChange,
+    onSearch,
+    placeholder = "Search...",
 }) => {
-	const handleSubmit = (e) => {
-		e.preventDefault();
-		onSearch(value);
-	};
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSearch(value);
+    };
 
-	return (
-		<form onSubmit={handleSubmit} className="relative">
-			<input
-				type="text"
-				placeholder={placeholder}
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				className="pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-			/>
-			<Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-		</form>
-	);
+    // Enhanced onChange handler with uppercase transformation
+    const handleChange = (e) => {
+        const inputValue = e.target.value;
+        // Apply uppercase transformation to search terms
+        const finalValue = inputValue.toUpperCase();
+        onChange(finalValue);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="relative">
+            <input
+                type="text"
+                placeholder={placeholder}
+                value={value}
+                onChange={handleChange}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        </form>
+    );
 };
 
 SearchBar.propTypes = {
-	value: PropTypes.string.isRequired,
-	onChange: PropTypes.func.isRequired,
-	onSearch: PropTypes.func.isRequired,
-	placeholder: PropTypes.string,
+    value: PropTypes.string.isRequired,
+    onChange: PropTypes.func.isRequired,
+    onSearch: PropTypes.func.isRequired,
+    placeholder: PropTypes.string,
 };

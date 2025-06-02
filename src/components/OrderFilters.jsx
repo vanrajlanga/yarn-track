@@ -18,138 +18,161 @@ import { Button } from "./ui/Button";
  * @returns {React.ReactElement}
  */
 export const OrderFilters = ({
-	filters,
-	onFilterChange,
-	showSalespersonFilter = false,
-	salesUsers = [],
-	isFactoryUser = false,
-	onExport,
+    filters,
+    onFilterChange,
+    showSalespersonFilter = false,
+    salesUsers = [],
+    isFactoryUser = false,
+    onExport,
 }) => {
-	console.log("Type of onExport in OrderFilters:", typeof onExport);
+    console.log("Type of onExport in OrderFilters:", typeof onExport);
 
-	const handleFilterChange = (field, value) => {
-		onFilterChange({ ...filters, [field]: value });
-	};
+    // Helper function to determine if a field should be uppercased
+    const shouldUppercase = (field, value) => {
+        // Don't uppercase empty values
+        if (!value) return value;
 
-	return (
-		<div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-				{/* Status Filter */}
-				<div>
-					<label
-						htmlFor="status-filter"
-						className="block text-sm font-medium text-gray-700 mb-1"
-					>
-						Status
-					</label>
-					<div className="relative">
-						<select
-							id="status-filter"
-							name="status"
-							value={filters.status}
-							onChange={(e) =>
-								handleFilterChange("status", e.target.value)
-							}
-							className="block w-full cursor-pointer appearance-none rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-							style={{ height: "42px" }}
-						>
-							<option value="all">All Statuses</option>
-							<option value="received">Received</option>
-							<option value="dyeing">Dyeing</option>
-							<option value="dyeing_complete">
-								Dyeing Complete
-							</option>
-							<option value="conning">Conning</option>
-							<option value="conning_complete">
-								Conning Complete
-							</option>
-							<option value="packing">Packing</option>
-							<option value="packed">Packed</option>
-						</select>
-						<div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-							<svg
-								className="w-4 h-4 fill-current"
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 20 20"
-							>
-								<path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-							</svg>
-						</div>
-					</div>
-				</div>
+        // Don't uppercase date fields, status selections, or IDs
+        const excludedFields = [
+            "startDate",
+            "endDate",
+            "status",
+            "salespersonId",
+        ];
 
-				{/* Salesperson Filter */}
-				{showSalespersonFilter && salesUsers.length > 0 && (
-					<div>
-						<label
-							htmlFor="salespersonFilter"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
-							Salesperson
-						</label>
-						<Select
-							id="salespersonFilter"
-							value={filters.salespersonId}
-							onChange={(e) =>
-								handleFilterChange(
-									"salespersonId",
-									e.target.value
-								)
-							}
-						>
-							<option value="all">All Salespersons</option>
-							{salesUsers.map((user) => (
-								<option key={user.id} value={user.id}>
-									{user.username}
-								</option>
-							))}
-						</Select>
-					</div>
-				)}
+        // For now, this component doesn't have text fields that need uppercasing
+        // but keeping this structure for future text-based filters
+        if (excludedFields.includes(field)) {
+            return value;
+        }
 
-				{/* Order Date Filter and Export Button */}
-				<div className="md:col-span-2 flex items-end space-x-4">
-					{/* Order Date Filter */}
-					<div className="flex items-center space-x-2 flex-grow">
-						<Input
-							type="date"
-							value={filters.startDate}
-							onChange={(e) =>
-								handleFilterChange("startDate", e.target.value)
-							}
-						/>
-						<span className="text-gray-500">to</span>
-						<Input
-							type="date"
-							value={filters.endDate}
-							onChange={(e) =>
-								handleFilterChange("endDate", e.target.value)
-							}
-						/>
-					</div>
+        return value.toUpperCase();
+    };
 
-					{/* Export Button */}
-					<div>
-						<Button size="sm" onClick={() => onExport(filters)}>
-							Export
-						</Button>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+    const handleFilterChange = (field, value) => {
+        const finalValue = shouldUppercase(field, value);
+        onFilterChange({ ...filters, [field]: finalValue });
+    };
+
+    return (
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                {/* Status Filter */}
+                <div>
+                    <label
+                        htmlFor="status-filter"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                        Status
+                    </label>
+                    <div className="relative">
+                        <select
+                            id="status-filter"
+                            name="status"
+                            value={filters.status}
+                            onChange={(e) =>
+                                handleFilterChange("status", e.target.value)
+                            }
+                            className="block w-full cursor-pointer appearance-none rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                            style={{ height: "42px" }}
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="received">Received</option>
+                            <option value="dyeing">Dyeing</option>
+                            <option value="dyeing_complete">
+                                Dyeing Complete
+                            </option>
+                            <option value="conning">Conning</option>
+                            <option value="conning_complete">
+                                Conning Complete
+                            </option>
+                            <option value="packing">Packing</option>
+                            <option value="packed">Packed</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg
+                                className="w-4 h-4 fill-current"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                            >
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Salesperson Filter */}
+                {showSalespersonFilter && salesUsers.length > 0 && (
+                    <div>
+                        <label
+                            htmlFor="salespersonFilter"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                            Salesperson
+                        </label>
+                        <Select
+                            id="salespersonFilter"
+                            value={filters.salespersonId}
+                            onChange={(e) =>
+                                handleFilterChange(
+                                    "salespersonId",
+                                    e.target.value
+                                )
+                            }
+                        >
+                            <option value="all">All Salespersons</option>
+                            {salesUsers.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                    {user.username}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+                )}
+
+                {/* Order Date Filter and Export Button */}
+                <div className="md:col-span-2 flex items-end space-x-4">
+                    {/* Order Date Filter */}
+                    <div className="flex items-center space-x-2 flex-grow">
+                        <Input
+                            type="date"
+                            value={filters.startDate}
+                            onChange={(e) =>
+                                handleFilterChange("startDate", e.target.value)
+                            }
+                        />
+                        <span className="text-gray-500">to</span>
+                        <Input
+                            type="date"
+                            value={filters.endDate}
+                            onChange={(e) =>
+                                handleFilterChange("endDate", e.target.value)
+                            }
+                        />
+                    </div>
+
+                    {/* Export Button */}
+                    <div>
+                        <Button size="sm" onClick={() => onExport(filters)}>
+                            Export
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 OrderFilters.propTypes = {
-	filters: PropTypes.shape({
-		status: PropTypes.string.isRequired,
-		salespersonId: PropTypes.string,
-		startDate: PropTypes.string,
-		endDate: PropTypes.string,
-	}).isRequired,
-	onFilterChange: PropTypes.func.isRequired,
-	showSalespersonFilter: PropTypes.bool,
-	salesUsers: PropTypes.array,
-	isFactoryUser: PropTypes.bool,
-	onExport: PropTypes.func.isRequired,
+    filters: PropTypes.shape({
+        status: PropTypes.string.isRequired,
+        salespersonId: PropTypes.string,
+        startDate: PropTypes.string,
+        endDate: PropTypes.string,
+    }).isRequired,
+    onFilterChange: PropTypes.func.isRequired,
+    showSalespersonFilter: PropTypes.bool,
+    salesUsers: PropTypes.array,
+    isFactoryUser: PropTypes.bool,
+    onExport: PropTypes.func.isRequired,
 };
